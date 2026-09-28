@@ -19,7 +19,11 @@ A 100% offline, privacy-first file conversion web application built with vanilla
   - **Document Conversion**: Pure JavaScript offline PDF 1.4 multi-page document generator (`PdfDocument`), Markdown compiler (`MarkdownParser`), and PDF text extractor (`PdfExtractor`).
   - **Audio & Video Conversion**: Locally bundled FFmpeg 0.12 WebAssembly engine (`ffmpeg-core.js` and `ffmpeg-core.wasm` in `public/ffmpeg/` and `libs/local/ffmpeg/`) running in a dedicated WASM worker.
 - **Memory Hygiene**: Ephemeral memory management, zero-copy transferable `ArrayBuffer` pipelines, automatic unlinking of virtual filesystem files (`deleteFile`), idle worker termination, and explicit `URL.revokeObjectURL()` cleanup.
-- **Concurrency & Responsiveness**: Heavy CPU workloads offloaded to dedicated Web Workers to maintain a 60fps responsive UI; instant cancellation with worker termination; non-blocking sequential queue execution.
+- **Progressive Web App (PWA) & Offline**:
+  - **Manifest & Standalone Mode**: Configured `manifest.json` enabling standalone windowed installation, native window controls, and crisp multi-resolution icons.
+  - **Cache-First Service Worker**: `sw.js` pre-caches the complete application shell (`index.html`, icons, manifest) and dynamically caches runtime assets, enabling 100% offline launches and page refreshes.
+  - **In-App Install Prompt**: Intercepts `beforeinstallprompt` to present a customized in-app install button that gracefully hides in standalone mode.
+  - **Zero Network Dependency**: Zero external requests; operates fully disconnected after initial download.
 
 ## Supported Formats
 
@@ -32,6 +36,19 @@ A 100% offline, privacy-first file conversion web application built with vanilla
 
 *Note: Video-to-audio extraction (e.g. MP4 to MP3/WAV) is fully supported natively.*
 
+## Development & Verification
+
+```bash
+# Run unit and integration test suites (Phases 1-9)
+npm test
+
+# Build production bundle with PWA assets
+npm run build
+
+# Preview production build locally
+npm run preview
+```
+
 ## Project Documentation
 
 - [docs/PRD.md](file:///d:/Frontend/All_Projects/Apps/File-Converter/docs/PRD.md): Product Requirements Document
@@ -39,4 +56,5 @@ A 100% offline, privacy-first file conversion web application built with vanilla
 - [PROJECT_STATE.md](file:///d:/Frontend/All_Projects/Apps/File-Converter/PROJECT_STATE.md): Source of truth for project status
 - [TODO.md](file:///d:/Frontend/All_Projects/Apps/File-Converter/TODO.md): Task board and roadmap
 - [CHANGELOG.md](file:///d:/Frontend/All_Projects/Apps/File-Converter/CHANGELOG.md): Historical change records
+
 

@@ -1,13 +1,13 @@
 # Project State
 
 ## Current Phase
-Phase 8 — Web Workers (Complete) / Phase 9 — PWA / Offline (Ready to start)
+Phase 9 — PWA / Offline (Complete) / Phase 10 — Testing (Ready to start)
 
 ## Current Task
-Completed Phase 8 Web Workers & Background Offloading: Offloaded CPU-heavy image conversions to a dedicated Web Worker (`src/workers/image.worker.js`) using `OffscreenCanvas`, `createImageBitmap`, and zero-copy transferable `ArrayBuffer` pipelines. Built `ImageWorkerClient` (`src/workers/image-worker-client.js`) and `WorkerPool` (`src/workers/worker-pool.js`) managing worker lifecycle, progress events, error boundaries (`WORKER_CRASH`), immediate worker termination on cancellation, and memory cleanup (zero memory leaks). Integrated `ImageWorkerClient` into `ImageConverter` with transparent fallback to main-thread canvas where workers are unsupported. Wired worker termination and cleanup into `App` queue actions (`clearAllQueue`, `cancelBatchQueue`, `convertAllQueue`). Created unit test suite `tests/phase8-web-workers.test.js` validating all 43 Phase 8 assertions (381 total assertions passing across Phases 1 through 8).
+Completed Phase 9 PWA & Offline Engine: Implemented complete Progressive Web Application support with 100% offline capability. Added standard `manifest.json` with standalone display modes, orientation, category, and responsive multi-size SVG/PNG and maskable icons. Built cache-first `sw.js` and `service-worker.js` pre-caching core application shell (`/`, `/index.html`, `/manifest.json`, icons) with runtime caching for local media assets and WASM binaries, plus navigation fallback for offline reload. Implemented `PwaManager` (`src/core/pwa-manager.js`) handling service worker lifecycle, standalone mode detection, online/offline connectivity monitoring with live UI badges, and `beforeinstallprompt` interception with in-app install button. Created comprehensive unit test suite `tests/phase9-pwa-offline.test.js` validating all 46 Phase 9 assertions (427 total assertions passing across Phases 1 through 9). Verified production build and preview server functionality.
 
 ## Overall Progress
-85% (Phases 0 through 8 completed and verified; Ready for Phase 9 PWA & Offline Caching)
+92% (Phases 0 through 9 completed and verified; Ready for Phase 10 Comprehensive Testing)
 
 ## Completed Tasks
 - [x] Analyzed requirements from `docs/PRD.md` and structure from `docs/File-Structure.md`
@@ -52,10 +52,17 @@ Completed Phase 8 Web Workers & Background Offloading: Offloaded CPU-heavy image
   - Upgraded `ImageConverter` (`src/converters/image/image-converter.js`) to seamlessly offload conversions to Web Workers while preserving full backward compatibility with fallback to main-thread canvas
   - Wired worker termination and cleanup into `App` queue actions (`cancelBatchQueue`, `convertAllQueue`, `clearAllQueue`)
   - Created comprehensive unit test suite `tests/phase8-web-workers.test.js` (43 assertions passed)
-- [x] Verified zero errors with `npm test` (381 assertions passing across Phases 1 through 8) and `npm run build`
+- [x] Phase 9 PWA & Offline Support:
+  - Implemented compliant `manifest.json` with standalone display modes, orientation, categories, and icon configurations
+  - Generated PWA icon suite in `public/icons/` (192x192, 512x512, SVG, PNG, and maskable)
+  - Built `sw.js` and `service-worker.js` with static pre-caching, dynamic runtime caching, and SPA navigate fallback
+  - Built `PwaManager` (`src/core/pwa-manager.js`) managing SW registration, beforeinstallprompt handling, standalone detection, and online/offline monitoring
+  - Wired PWA install button and live offline indicator into header actions in `src/core/app.js` and `index.html`
+  - Created comprehensive unit test suite `tests/phase9-pwa-offline.test.js` (46 assertions passed)
+- [x] Verified zero errors with `npm test` (427 assertions passing across Phases 1 through 9) and `npm run build`
 
 ## In Progress
-None (Phase 8 completed and verified; awaiting instruction for Phase 9)
+None (Phase 9 completed and verified; awaiting instruction for Phase 10)
 
 ## Files Created
 - `package.json`
@@ -63,7 +70,13 @@ None (Phase 8 completed and verified; awaiting instruction for Phase 9)
 - `index.html`
 - `.gitignore`
 - `public/manifest.json`
-- `public/icons/.gitkeep`
+- `public/sw.js`
+- `public/service-worker.js`
+- `public/icons/icon-192.svg`
+- `public/icons/icon-512.svg`
+- `public/icons/icon-maskable.svg`
+- `public/icons/icon-192.png`
+- `public/icons/icon-512.png`
 - `public/ffmpeg/ffmpeg-core.js`
 - `public/ffmpeg/ffmpeg-core.wasm`
 - `libs/local/ffmpeg/ffmpeg-core.js`
@@ -78,6 +91,7 @@ None (Phase 8 completed and verified; awaiting instruction for Phase 9)
 - `src/core/conversion-error.js`
 - `src/core/file-manager.js`
 - `src/core/download-manager.js`
+- `src/core/pwa-manager.js`
 - `src/utils/formatters.js`
 - `src/converters/image/image-converter.js`
 - `src/converters/pdf/pdf-generator.js`
@@ -104,17 +118,20 @@ None (Phase 8 completed and verified; awaiting instruction for Phase 9)
 - `tests/phase6-document-conversion.test.js`
 - `tests/phase7-audio-video.test.js`
 - `tests/phase8-web-workers.test.js`
+- `tests/phase9-pwa-offline.test.js`
 - `PROJECT_STATE.md`
 - `CHANGELOG.md`
 - `TODO.md`
 - `README.md`
 
 ## Files Modified
-- `src/converters/image/image-converter.js`
-- `src/core/converter-manager.js`
-- `src/core/app.js`
-- `src/utils/formatters.js`
+- `public/manifest.json`
+- `index.html`
 - `src/styles/main.css`
+- `src/core/app.js`
+- `src/core/converter-manager.js`
+- `src/converters/image/image-converter.js`
+- `src/utils/formatters.js`
 - `vite.config.js`
 - `package.json`
 - `PROJECT_STATE.md`
@@ -160,52 +177,45 @@ None (Phase 8 completed and verified; awaiting instruction for Phase 9)
 - `tests/phase6-document-conversion.test.js`: All 98 assertions passed
 - `tests/phase7-audio-video.test.js`: All 57 assertions passed
 - `tests/phase8-web-workers.test.js`: All 43 assertions passed
-  - WorkerPool instantiation, worker acquisition, task queueing under saturation
-  - Task execution and worker release triggering queued tasks
-  - WorkerPool cancellation with AbortSignal terminating busy workers
-  - WorkerPool terminateAll clearing workers and task queues
-  - ImageWorkerClient message protocol: PROGRESS (15%, 60%), SUCCESS with transferred ArrayBuffer
-  - Output Blob reconstruction from transferred buffer with proper MIME and dimensions
-  - Active jobs map cleanup on completion (zero memory leaks)
-  - Worker error handling: CORRUPTED_FILE preservation
-  - Worker crash handling: WORKER_CRASH code, worker termination, and state reset
-  - Cancellation handling: AbortSignal terminating busy worker immediately and releasing RAM
-  - Client idle cleanup terminating workers
-  - ImageConverter worker client initialization and convert() delegation
-  - Fallback to convertOnMainThread when worker is disabled or encounters issue
-  - Cancellation from worker re-thrown immediately without falling back to main thread
-  - ConverterManager integration and getConverter helper resolution
-  - Clean worker cleanup and termination
-- Production build test (`npm run build`): Successfully built 32 modules with separate worker chunk (`dist/assets/image.worker-CiGeFHjO.js`) in 411ms with 0 errors
-- Total passing assertions across all phases: 381 passed, 0 failed
+- `tests/phase9-pwa-offline.test.js`: All 46 assertions passed
+  - Valid manifest.json with required PWA metadata, standalone display, and theme colors
+  - Icon file existence and non-zero sizes for 192x192, 512x512, SVG, PNG, and maskable targets
+  - Service worker files (sw.js, service-worker.js) registration and lifecycle hooks
+  - Pre-caching configuration for shell assets and navigation fallback for offline reloading
+  - PwaManager lifecycle: initialization, isStandalone, isOnline, beforeinstallprompt interception, promptInstall
+  - Zero external CDN links or remote font tags anywhere in HTML/JS
+  - Full local presence of WASM core binaries (>30MB)
+  - Offline conversion execution without internet connectivity
+- Production build test (`npm run build`): Successfully built 33 modules in 372ms with 0 errors
+- Preview server verified on `http://localhost:4173`: Serving HTML, manifest, SW, icons, and static assets
+- Total passing assertions across all phases: 427 passed, 0 failed
 
 ## Tests Failed
 None
 
 ## Known Issues
-None
+- Playwright browser driver installation in the subagent environment returned 404 from azureedge CDN; verified production server via direct HTTP curl and unit test suites.
 
 ## Pending Tasks
-- Phase 9: PWA / Offline (Manifest, Service Worker, cache-first strategy)
 - Phase 10: Testing (Format validation, memory checks, corrupted file handling)
 - Phase 11: Optimization (Memory management, Blob disposal, UI responsiveness)
 - Phase 12: Finalization (Production build, documentation, final validation)
 
 ## Next Recommended Task
-Phase 9 — PWA / Offline: Implement Service Worker (`sw.js`), Web App Manifest (`manifest.json`), cache-first offline strategies, install prompt handling, and offline indicator.
+Phase 10 — Testing: Perform comprehensive end-to-end edge-case validation, corrupted file handling, format boundary tests, and memory leak checks.
 
 ## Important Decisions
-- Worker-offloaded image pipeline: CPU-intensive operations (image decoding, scaling, canvas rendering, JPEG/WebP compression) run in a dedicated Web Worker (`image.worker.js`) using `OffscreenCanvas`, ensuring the UI stays completely responsive at 60fps.
-- Zero-copy buffer transfer: Input and output ArrayBuffers are transferred via Transferable Objects (`postMessage(..., [buffer])`), eliminating memory cloning overhead.
-- Immediate worker termination on abort: Cancelling active conversions terminates the worker thread immediately via `worker.terminate()`, instantly halting CPU load and releasing WASM/Canvas buffers.
-- Graceful main-thread fallback: If a browser or environment lacks `OffscreenCanvas` or Web Worker support, `ImageConverter` seamlessly executes `convertOnMainThread()` with 0 user-facing disruption.
-- Lightweight operations remain on main thread: Text transformations, JSON pretty-printing, and lightweight markdown parsing remain on the main thread to avoid worker serialization overhead.
+- 100% Offline PWA: The app functions as a complete standalone Progressive Web App with zero network requirements once installed.
+- Cache-First Service Worker: Pre-caches application shell on install and dynamically caches local WASM/media assets on fetch.
+- Navigation fallback: Navigation requests fall back to `/index.html` from cache, ensuring offline reloads work reliably.
+- In-App Install Prompt: Custom install button in the header triggers `beforeinstallprompt`, hidden when running in standalone mode.
+- Offline status indicator: Visual badge alerts user when network is disconnected while assuring them that all conversion engines remain 100% functional.
 
 ## Do Not Repeat
 - Do not add remote CDN links or remote font/script tags.
 - Do not mock or fake conversion outputs; unsupported formats must fail transparently.
 - Do not move lightweight operations into workers unnecessarily.
-- Do not start Phase 9 automatically until instructed.
+- Do not start Phase 10 automatically until instructed.
 
 ## Last Updated
 2026-09-28

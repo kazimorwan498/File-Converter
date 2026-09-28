@@ -93,25 +93,31 @@
   * [x] Hook worker termination and idle cleanup into queue lifecycle actions in [src/core/app.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/app.js)
   * [x] Create comprehensive unit test suite [tests/phase8-web-workers.test.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/tests/phase8-web-workers.test.js) (43 assertions passed)
 
+* [x] **Phase 9 — PWA / Offline**
+  * [x] Implement Web App Manifest in [public/manifest.json](file:///d:/Frontend/All_Projects/Apps/File-Converter/public/manifest.json) with standalone display mode, orientation, background/theme colors, and categories
+  * [x] Generate responsive multi-resolution PWA icons in `public/icons/` (192x192, 512x512, SVG, PNG, and maskable)
+  * [x] Implement Cache-First Service Worker in [public/sw.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/public/sw.js) and [public/service-worker.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/public/service-worker.js) with shell pre-caching, dynamic runtime caching, and SPA navigate fallback
+  * [x] Implement `PwaManager` in [src/core/pwa-manager.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/pwa-manager.js) with SW registration, standalone mode detection, online/offline monitoring, and `beforeinstallprompt` handling
+  * [x] Integrate install button and live offline indicator badge into [index.html](file:///d:/Frontend/All_Projects/Apps/File-Converter/index.html), [src/styles/main.css](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/styles/main.css), and [src/core/app.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/app.js)
+  * [x] Create comprehensive unit test suite [tests/phase9-pwa-offline.test.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/tests/phase9-pwa-offline.test.js) (46 assertions passed)
+
 ---
 
 ## Current Tasks
 
-* [ ] Ready to start **Phase 9 — PWA / Offline**
-  * [ ] Implement Web App Manifest (`public/manifest.json`)
-  * [ ] Implement Service Worker (`sw.js`) with complete cache-first offline strategy
-  * [ ] Provide PWA installation prompt and offline readiness indicators
+* [ ] Ready to start **Phase 10 — Testing & Edge Cases**
+  * [ ] Comprehensive unit test format validation and converter interfaces
+  * [ ] Integration test file queue, cancellation, and download lifecycle
+  * [ ] Verify edge cases: corrupted files, oversized files, unsupported types
 
 ---
 
 ## Pending Tasks
 
-### Phase 9 — PWA / Offline
-* [ ] Implement Web App Manifest (`public/manifest.json`)
-* [ ] Implement Service Worker (`sw.js`) with complete cache-first offline strategy
-* [ ] Provide PWA installation prompt and offline readiness indicators
-
-### Phase 10 — Testing
+### Phase 10 — Testing & Edge Cases
+* [ ] Unit test format validation and converter interfaces
+* [ ] Integration test file queue, cancellation, and download lifecycle
+* [ ] Verify edge cases: corrupted files, oversized files, unsupported types
 * [ ] Unit test format validation and converter interfaces
 * [ ] Integration test file queue, cancellation, and download lifecycle
 * [ ] Verify edge cases: corrupted files, oversized files, unsupported types

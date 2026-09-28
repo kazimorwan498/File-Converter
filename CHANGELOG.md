@@ -6,6 +6,13 @@ All notable changes to the Offline File Converter project will be documented in 
 
 ### Added
 
+* Completed Phase 9 — PWA & Offline Support:
+  * Implemented Web App Manifest in `public/manifest.json`: Standard standalone display mode, orientation, background/theme colors, categories, and icon configurations.
+  * Generated PWA icon suite in `public/icons/`: Multi-resolution icons (`icon-192.svg`, `icon-512.svg`, `icon-maskable.svg`, and binary `icon-192.png`, `icon-512.png`).
+  * Implemented Cache-First Service Worker in `public/sw.js` and `public/service-worker.js`: Pre-caches core application shell (`/`, `/index.html`, `/manifest.json`, and all icon assets) into `file-converter-static-v1.0.0`; dynamically caches runtime assets into `file-converter-runtime-v1.0.0`; provides offline SPA navigation fallback to `/index.html`.
+  * Implemented `PwaManager` in `src/core/pwa-manager.js`: Handles service worker registration, standalone mode detection (`display-mode: standalone`, `navigator.standalone`), online/offline network connectivity listeners with live UI synchronization, and `beforeinstallprompt` interception with custom in-app install trigger.
+  * UI Integration: Added dynamic `#offline-indicator` badge and `#pwa-install-btn` into application header in `index.html`, `src/styles/main.css`, and `src/core/app.js`.
+  * Created unit test suite `tests/phase9-pwa-offline.test.js` validating all 46 Phase 9 assertions.
 * Completed Phase 8 — Web Workers & Background Offloading:
   * Implemented `ImageWorker` in `src/workers/image.worker.js`: Dedicated Web Worker offloading image decoding, dimension calculation, `OffscreenCanvas` rendering, transparency fill, and format encoding (PNG, JPG, WebP) from the main UI thread.
   * Implemented zero-copy memory transfer utilizing transferable `ArrayBuffer` instances between main thread and workers.
@@ -52,22 +59,26 @@ All notable changes to the Offline File Converter project will be documented in 
 
 ### Changed
 
+* Updated `index.html`: Added `<link rel="manifest" href="/manifest.json">`, apple touch icon, and theme color tags; added `#offline-indicator` and `#pwa-install-btn` in header actions.
+* Updated `src/styles/main.css`: Added styles for `#pwa-install-btn`, `#offline-indicator` pulsing badge, and `[data-standalone="true"]` presentation mode.
+* Updated `src/core/app.js`: Integrated `PwaManager` lifecycle, dynamically binding live online/offline network changes and user install prompt clicks.
 * Updated `src/converters/image/image-converter.js`: Integrated `ImageWorkerClient` to offload heavy operations to Web Workers while maintaining transparent fallback to `convertOnMainThread`.
 * Updated `src/core/converter-manager.js`: Added `getConverter(input, output)` method delegating to registry.
-* Updated `src/core/app.js`: Added worker termination and cleanup calls into `cancelBatchQueue`, `convertAllQueue`, and `clearAllQueue`.
-* Updated `package.json`: Bumped version to `0.8.0` and included Phase 8 tests in `npm test`.
-* Updated `PROJECT_STATE.md`, `TODO.md`, and `README.md` to reflect Phase 8 completion.
+* Updated `package.json`: Bumped version to `0.9.0` and included Phase 9 test suite in `npm test`.
+* Updated `PROJECT_STATE.md`, `TODO.md`, and `README.md` to reflect Phase 9 completion.
 
 ### Fixed
 
+* Guaranteed 100% offline reload resilience: Navigation requests fallback to pre-cached `/index.html` via Service Worker cache-first strategy.
 * Eliminated main-thread UI freezing during CPU-intensive image resizing and canvas compression.
 * Guaranteed clean worker termination on abort/cancel events, instantly releasing CPU and memory.
 * Prevented memory leaks by transferring `ArrayBuffer` objects with zero-copy semantics and destroying idle workers.
 
 ### Tested
 
-* Executed `npm test`: 381 assertions passed across Phase 1 through 8 test suites with 0 failures.
-* Executed `npm run build`: Production bundle transformed 32 modules with separate worker chunk in 411ms with 0 errors.
+* Executed `npm test`: 427 assertions passed across Phase 1 through 9 test suites with 0 failures.
+* Executed `npm run build`: Production bundle transformed 33 modules in 372ms with 0 errors and copied manifest, service worker, icons, and WASM binaries to `dist/`.
+* Preview server verification (`http://localhost:4173`): Verified HTTP 200 responses for `/`, `/manifest.json`, `/sw.js`, and `/icons/icon-192.png`.
 * Dev server HTTP check: `http://localhost:3000` is active and responsive.
 
 

@@ -13,6 +13,7 @@ import { DocumentConverter, DOCUMENT_CONVERSION_LIMITATIONS } from '../converter
 import { AudioConverter } from '../converters/audio/audio-converter.js';
 import { VideoConverter } from '../converters/video/video-converter.js';
 import { generateOutputFilename } from '../utils/formatters.js';
+import { PwaManager } from './pwa-manager.js';
 
 export class App {
   constructor() {
@@ -37,6 +38,13 @@ export class App {
     this.videoConverter = new VideoConverter();
     this.converterManager.registerConverter(this.videoConverter);
 
+    // Initialize PWA Lifecycle Manager
+    this.pwaManager = new PwaManager({
+      onConnectivityChange: (isOnline) => this.handleConnectivityChange(isOnline),
+      onInstallableChange: (installable) => this.handleInstallableChange(installable),
+      onInstalled: () => this.handleAppInstalled()
+    });
+
     // Track active object URLs for previews to prevent memory leaks
     this.previewUrls = new Map();
 
@@ -47,6 +55,8 @@ export class App {
     // DOM references
     this.themeToggleBtn = null;
     this.themeLabel = null;
+    this.offlineIndicator = null;
+    this.pwaInstallBtn = null;
     this.dropZone = null;
     this.fileInput = null;
     this.browseBtn = null;
@@ -70,9 +80,10 @@ export class App {
   init() {
     this.cacheDOMElements();
     this.initThemeSystem();
+    this.initPwaSystem();
     this.bindDropZoneEvents();
     this.bindQueueEvents();
-    console.info('Offline File Converter — Phase 5 Conversion Queue ready.');
+    console.info('Offline File Converter — Phase 9 PWA & Offline Engine ready.');
   }
 
   /**
@@ -81,6 +92,8 @@ export class App {
   cacheDOMElements() {
     this.themeToggleBtn = document.getElementById('theme-toggle');
     this.themeLabel = document.getElementById('theme-label');
+    this.offlineIndicator = document.getElementById('offline-indicator');
+    this.pwaInstallBtn = document.getElementById('pwa-install-btn');
     this.dropZone = document.getElementById('drop-zone');
     this.fileInput = document.getElementById('file-input');
     this.browseBtn = document.getElementById('browse-btn');
@@ -93,6 +106,71 @@ export class App {
     this.downloadAllBtn = document.getElementById('download-all-btn');
     this.notificationArea = document.getElementById('notification-area');
     this.a11yAnnouncer = document.getElementById('a11y-announcer');
+  }
+
+  /**
+   * Initialize PWA subsystem and event bindings
+   */
+  initPwaSystem() {
+    // Check standalone mode
+    if (this.pwaManager.isStandalone()) {
+      document.documentElement.setAttribute('data-standalone', 'true');
+    }
+
+    // Check initial connectivity
+    this.handleConnectivityChange(this.pwaManager.isOnline());
+
+    // Wire PWA install button
+    if (this.pwaInstallBtn) {
+      this.pwaInstallBtn.addEventListener('click', async () => {
+        const result = await this.pwaManager.promptInstall();
+        if (result.outcome === 'accepted') {
+          this.announce('Installing application...');
+        }
+      });
+    }
+
+    // Initialize PWA service worker and prompt interception
+    this.pwaManager.init();
+  }
+
+  /**
+   * Handle online/offline transitions
+   * @param {boolean} isOnline
+   */
+  handleConnectivityChange(isOnline) {
+    if (this.offlineIndicator) {
+      if (!isOnline) {
+        this.offlineIndicator.classList.remove('hidden');
+        this.announce('Offline mode active. All conversions remain 100% functional.');
+      } else {
+        this.offlineIndicator.classList.add('hidden');
+      }
+    }
+  }
+
+  /**
+   * Handle installable status change
+   * @param {boolean} installable
+   */
+  handleInstallableChange(installable) {
+    if (this.pwaInstallBtn) {
+      if (installable && !this.pwaManager.isStandalone()) {
+        this.pwaInstallBtn.classList.remove('hidden');
+      } else {
+        this.pwaInstallBtn.classList.add('hidden');
+      }
+    }
+  }
+
+  /**
+   * Handle successful application installation
+   */
+  handleAppInstalled() {
+    if (this.pwaInstallBtn) {
+      this.pwaInstallBtn.classList.add('hidden');
+    }
+    this.announce('Offline File Converter has been installed successfully.');
   }
 
   /**

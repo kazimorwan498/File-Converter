@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="gradMask" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <!-- Full Bleed Background for Safe Area Masking -->
+  <rect width="512" height="512" fill="url(#gradMask)"/>
+  
+  <!-- Content Kept Strictly Within 80% Safe Zone (diameter ~410px centered at 256,256) -->
+  <g transform="translate(256,256) scale(0.85) translate(-256,-256)">
+    <!-- Document Shape -->
+    <path d="M168 128 h114 l76 76 v170 a16 16 0 0 1 -16 16 H168 a16 16 0 0 1 -16 -16 V144 a16 16 0 0 1 16 -16 z" 
+          fill="#ffffff" opacity="0.95"/>
+    <path d="M282 128 v76 h76 z" fill="#e0e7ff"/>
+    
+    <!-- Conversion Arrows -->
+    <path d="M256 246 a48 48 0 1 0 44 28" fill="none" stroke="#4f46e5" stroke-width="13" stroke-linecap="round"/>
+    <polygon points="300,256 320,276 290,282" fill="#4f46e5"/>
+    <polygon points="212,292 192,272 222,266" fill="#4f46e5"/>
+  </g>
+</svg>

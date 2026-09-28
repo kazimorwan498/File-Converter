@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="grad512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <filter id="shadow512" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <!-- Background Rounded Rect -->
+  <rect width="512" height="512" rx="112" fill="#090d16"/>
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="url(#grad512)" filter="url(#shadow512)"/>
+  
+  <!-- Document Shape -->
+  <path d="M160 118 h122 l80 80 v186 a16 16 0 0 1 -16 16 H160 a16 16 0 0 1 -16 -16 V134 a16 16 0 0 1 16 -16 z" 
+        fill="#ffffff" opacity="0.95"/>
+  <path d="M282 118 v80 h80 z" fill="#e0e7ff"/>
+  
+  <!-- Conversion Arrows -->
+  <path d="M256 240 a52 52 0 1 0 48 30" fill="none" stroke="#4f46e5" stroke-width="14" stroke-linecap="round"/>
+  <polygon points="304,250 326,272 294,278" fill="#4f46e5"/>
+  <polygon points="208,290 186,268 218,262" fill="#4f46e5"/>
+</svg>

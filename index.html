@@ -6,6 +6,12 @@
   <title>Offline File Converter — 100% Private & Local</title>
   <meta name="description" content="Fast, private, and 100% offline file converter. Convert images, documents, audio, and video directly inside your browser without uploading to any server." />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z'/%3E%3Cpolyline points='14 2 14 8 20 8'/%3E%3Cpath d='M12 18v-6'/%3E%3Cpath d='m9 15 3 3 3-3'/%3E%3C/svg%3E" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#4f46e5" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FileConverter" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
   <link rel="stylesheet" href="/src/styles/main.css" />
 </head>
 <body>
@@ -36,6 +42,30 @@
       </div>
 
       <div class="header-actions">
+        <!-- Offline Indicator Badge -->
+        <div id="offline-indicator" class="offline-badge hidden" title="Working 100% offline without internet connection">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="1" y1="1" x2="23" y2="23"/>
+            <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
+            <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
+            <path d="M10.71 5.05A16 16 0 0 1 22.58 9"/>
+            <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+            <line x1="12" y1="20" x2="12.01" y2="20"/>
+          </svg>
+          <span>Offline</span>
+        </div>
+
+        <!-- PWA Install Button (Displayed when beforeinstallprompt is triggered) -->
+        <button id="pwa-install-btn" class="btn btn-secondary pwa-install-btn hidden" aria-label="Install App for Offline Use" title="Install offline app on your device">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>Install App</span>
+        </button>
+
         <!-- Theme Toggle Button (Cycles: Dark -> Light -> System) -->
         <button id="theme-toggle" class="btn btn-icon theme-btn" aria-label="Theme: Dark. Click to switch theme" title="Current: Dark (Click to change)">
           <span class="theme-icon-container" aria-hidden="true">
