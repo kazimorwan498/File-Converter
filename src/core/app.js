@@ -9,6 +9,7 @@ import { FileManager } from './file-manager.js';
 import { ConverterManager } from './converter-manager.js';
 import { DownloadManager } from './download-manager.js';
 import { ImageConverter } from '../converters/image/image-converter.js';
+import { DocumentConverter, DOCUMENT_CONVERSION_LIMITATIONS } from '../converters/pdf/document-converter.js';
 import { generateOutputFilename } from '../utils/formatters.js';
 
 export class App {
@@ -21,6 +22,10 @@ export class App {
     // Register native ImageConverter
     this.imageConverter = new ImageConverter();
     this.converterManager.registerConverter(this.imageConverter);
+
+    // Register native DocumentConverter
+    this.documentConverter = new DocumentConverter();
+    this.converterManager.registerConverter(this.documentConverter);
 
     // Track active object URLs for previews to prevent memory leaks
     this.previewUrls = new Map();
@@ -353,12 +358,19 @@ export class App {
       previewMarkup = this.getCategoryIconMarkup(item.category);
     }
 
+    const isSupported = this.converterManager.canConvert(item.extension, item.outputFormat);
+    const limitation = !isSupported ? this.documentConverter.getConversionLimitation(item.extension, item.outputFormat) : null;
+
     const optionsHtml = item.availableOutputs.map(out => {
       const selected = out === item.outputFormat ? 'selected' : '';
-      return `<option value="${out}" ${selected}>${out.toUpperCase()}</option>`;
+      const canDo = this.converterManager.canConvert(item.extension, out);
+      const label = canDo ? out.toUpperCase() : `${out.toUpperCase()} (Unsupported)`;
+      return `<option value="${out}" ${selected}>${label}</option>`;
     }).join('');
 
     const isLossyImage = ['jpg', 'jpeg', 'webp'].includes(item.outputFormat);
+    const initialStatus = !isSupported ? 'unsupported' : item.status;
+    item.status = initialStatus;
 
     li.innerHTML = `
       <div class="queue-item-main">
@@ -394,13 +406,13 @@ export class App {
         </div>
 
         <div class="item-status">
-          <span id="status-${item.id}" class="status-badge status-${item.status}">
-            ${item.status}
+          <span id="status-${item.id}" class="status-badge status-${initialStatus}">
+            ${initialStatus}
           </span>
         </div>
 
         <div class="item-actions">
-          <button type="button" id="btn-convert-${item.id}" class="btn-convert-item" aria-label="Convert ${item.filename}">
+          <button type="button" id="btn-convert-${item.id}" class="btn-convert-item" aria-label="Convert ${item.filename}" ${!isSupported ? 'disabled title="Conversion unsupported offline"' : ''}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <polygon points="5 3 19 12 5 21 5 3"/>
             </svg>
@@ -436,6 +448,18 @@ export class App {
         </div>
       </div>
 
+      <div id="limitation-box-${item.id}" class="item-limitation-box ${isSupported ? 'hidden' : ''}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>
+          <strong class="limitation-title">Offline Limitation:</strong>
+          <span id="limitation-text-${item.id}">${limitation?.reason || 'This conversion is unsupported offline.'}</span>
+        </span>
+      </div>
+
       <div class="item-progress-container" aria-hidden="true">
         <div id="progress-${item.id}" class="item-progress-fill"></div>
       </div>
@@ -448,12 +472,45 @@ export class App {
         const nextFormat = e.target.value.toLowerCase();
         this.fileManager.setOutputFormat(item.id, nextFormat);
 
+        const canDo = this.converterManager.canConvert(item.extension, nextFormat);
+        const limBox = li.querySelector(`#limitation-box-${item.id}`);
+        const limText = li.querySelector(`#limitation-text-${item.id}`);
+        const cBtn = li.querySelector(`#btn-convert-${item.id}`);
+        const sBadge = li.querySelector(`#status-${item.id}`);
+
+        if (canDo) {
+          limBox?.classList.add('hidden');
+          if (cBtn) {
+            cBtn.disabled = false;
+            cBtn.title = `Convert ${item.filename}`;
+          }
+          if (sBadge && (item.status === 'unsupported' || item.status === 'queued')) {
+            item.status = 'queued';
+            sBadge.className = 'status-badge status-queued';
+            sBadge.textContent = 'Queued';
+          }
+        } else {
+          const lim = this.documentConverter.getConversionLimitation(item.extension, nextFormat);
+          if (limText) limText.textContent = lim.reason || 'This conversion is unsupported offline.';
+          limBox?.classList.remove('hidden');
+          if (cBtn) {
+            cBtn.disabled = true;
+            cBtn.title = 'Conversion unsupported offline';
+          }
+          if (sBadge && item.status !== 'completed') {
+            item.status = 'unsupported';
+            sBadge.className = 'status-badge status-unsupported';
+            sBadge.textContent = 'Unsupported';
+          }
+        }
+
         if (['jpg', 'jpeg', 'webp'].includes(nextFormat)) {
           qualityCtrl?.classList.remove('hidden');
         } else {
           qualityCtrl?.classList.add('hidden');
         }
 
+        this.updateQueueView();
         this.announce(`Target format for ${item.filename} set to ${nextFormat.toUpperCase()}`);
       });
     }
@@ -525,6 +582,25 @@ export class App {
     const cancelBtn = document.getElementById(`btn-cancel-${item.id}`);
     const retryBtn = document.getElementById(`btn-retry-${item.id}`);
     const downloadBtn = document.getElementById(`btn-download-${item.id}`);
+
+    // Check for unsupported offline conversion
+    if (!this.converterManager.canConvert(item.extension, item.outputFormat)) {
+      const lim = this.documentConverter.getConversionLimitation(item.extension, item.outputFormat);
+      const err = new ConversionError(
+        lim.reason || `Conversion from ${item.extension.toUpperCase()} to ${item.outputFormat.toUpperCase()} is unsupported offline.`,
+        'UNSUPPORTED_FORMAT'
+      );
+      if (statusBadge) {
+        statusBadge.className = 'status-badge status-unsupported';
+        statusBadge.textContent = 'Unsupported';
+      }
+      convertBtn?.classList.remove('hidden');
+      if (convertBtn) convertBtn.disabled = true;
+      cancelBtn?.classList.add('hidden');
+      this.announce(`Unsupported: ${err.message}`);
+      this.updateQueueView();
+      throw err;
+    }
 
     // Update UI to converting state
     convertBtn?.classList.add('hidden');
@@ -633,7 +709,10 @@ export class App {
       this.queueCountBadge.setAttribute('aria-label', `${count} item${count === 1 ? '' : 's'} in queue`);
     }
 
-    const hasConvertible = queue.some(i => i.status === 'queued' || i.status === 'failed' || i.status === 'cancelled');
+    const hasConvertible = queue.some(
+      i => (i.status === 'queued' || i.status === 'failed' || i.status === 'cancelled') &&
+           this.converterManager.canConvert(i.extension, i.outputFormat)
+    );
     const hasCompleted = queue.some(i => i.status === 'completed' && i.outputBlob);
 
     if (this.convertAllBtn && !this.isBatchProcessing) {
@@ -710,7 +789,8 @@ export class App {
    */
   async convertAllQueue() {
     const queue = this.fileManager.getQueue().filter(
-      i => i.status === 'queued' || i.status === 'failed' || i.status === 'cancelled'
+      i => (i.status === 'queued' || i.status === 'failed' || i.status === 'cancelled') &&
+           this.converterManager.canConvert(i.extension, i.outputFormat)
     );
     if (queue.length === 0) return;
 

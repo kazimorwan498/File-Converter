@@ -6,6 +6,14 @@ All notable changes to the Offline File Converter project will be documented in 
 
 ### Added
 
+* Completed Phase 6 — PDF / Document Conversion:
+  * Implemented `PdfDocument` in `src/converters/pdf/pdf-generator.js`: 100% offline, zero-dependency PDF 1.4 multi-page document generator with word-wrapping, margins, typography, page numbers ("Page X of Y"), and Base-14 fonts.
+  * Implemented `MarkdownParser` in `src/converters/pdf/markdown-parser.js`: Offline parser compiling Markdown to standalone styled HTML5 documents, styled multi-page PDFs, and clean plain text.
+  * Implemented `PdfExtractor` in `src/converters/pdf/pdf-extractor.js`: Text layer extractor from PDF streams with `FlateDecode` decompression via native Web Streams API (`DecompressionStream`), with clear error detection on scanned/empty PDFs.
+  * Implemented `DocumentConverter` in `src/converters/pdf/document-converter.js`: Extends `BaseConverter` supporting `txt` -> `pdf`/`html`, `md` -> `html`/`pdf`/`txt`, `html` -> `txt`, `json` -> `txt`, and `pdf` -> `txt`.
+  * Implemented transparent limitation handling: Unsupported document conversions (`pdf -> png/jpg`, `docx -> pdf`) are never faked, clearly marked in the UI with technical explanation callouts, and rejected with `UNSUPPORTED_FORMAT`.
+  * Registered `DocumentConverter` in `src/core/app.js` with dynamic limitation banners, disabled convert buttons for unsupported target pairs, and queue integration.
+  * Created unit test suite `tests/phase6-document-conversion.test.js` validating all 98 Phase 6 assertions.
 * Completed Phase 5 — Conversion Queue:
   * Connected `ConverterManager` and `ImageConverter` to interactive queue lifecycle in `src/core/app.js`.
   * Added sequential batch processing in `convertAllQueue` processing queued files one-by-one.
@@ -31,19 +39,20 @@ All notable changes to the Offline File Converter project will be documented in 
 
 ### Changed
 
-* Updated `src/core/app.js` with batch queue execution, item cancellation, retry handling, and download management.
-* Updated `src/core/download-manager.js` with `downloadAll` and URL tracking.
-* Updated `src/styles/main.css` with `.btn-cancel-item`, `.btn-retry-item`, and `.btn-danger` styles.
-* Updated `package.json` to execute Phases 1 through 5 test suites on `npm test`.
-* Updated `PROJECT_STATE.md` and `TODO.md` to reflect Phase 5 completion.
+* Updated `src/core/app.js` with `DocumentConverter` registration, dynamic limitation callouts, and disabled states for unsupported conversions.
+* Updated `src/utils/formatters.js` with `html` and `markdown` format mappings and expanded document outputs.
+* Updated `src/styles/main.css` with `.status-unsupported`, `.item-limitation-box`, and disabled button styling.
+* Updated `package.json` to execute Phases 1 through 6 test suites on `npm test` and bumped version to `0.6.0`.
+* Updated `PROJECT_STATE.md` and `TODO.md` to reflect Phase 6 completion.
 
 ### Fixed
 
-* Guaranteed sequential execution order during multi-file conversion to maintain 60fps UI responsiveness.
-* Staggered batch download triggers to prevent browser popup blockers from dropping files.
+* Handled Markdown syntax parsing order ensuring code blocks are preserved and not prematurely stripped by inline code expressions.
+* Handled FlateDecode decompression for compressed PDF text streams using native browser `DecompressionStream`.
+* Guaranteed honest handling for impossible offline conversions (`pdf -> image`, `docx -> pdf`), preventing fake outputs.
 
 ### Tested
 
-* Executed `npm test`: 183 assertions passed across Phase 1 through 5 test suites with 0 failures.
-* Executed `npm run build`: Production bundle transformed 14 modules in 256ms with 0 errors.
+* Executed `npm test`: 281 assertions passed across Phase 1 through 6 test suites with 0 failures.
+* Executed `npm run build`: Production bundle transformed 18 modules in 542ms with 0 errors.
 * Dev server HTTP check: `http://localhost:3000` is active and responsive.

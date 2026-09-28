@@ -62,14 +62,24 @@
   * [x] Implement object URL tracking and revocation
   * [x] Create test suite [tests/phase5-conversion-queue.test.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/tests/phase5-conversion-queue.test.js) (26 assertions passed)
 
+* [x] **Phase 6 — PDF / Document**
+  * [x] Determine browser-native document transformation boundaries
+  * [x] Implement standard PDF 1.4 generator in [src/converters/pdf/pdf-generator.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/converters/pdf/pdf-generator.js) with word-wrapping, margins, typography, page numbers, and Base-14 fonts
+  * [x] Implement Markdown parser in [src/converters/pdf/markdown-parser.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/converters/pdf/markdown-parser.js) supporting HTML5 document output, styled multi-page PDF generation, and plain text stripping
+  * [x] Implement PDF text extractor in [src/converters/pdf/pdf-extractor.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/converters/pdf/pdf-extractor.js) with native `DecompressionStream('deflate')` decompression and scanned document limitation detection
+  * [x] Implement `DocumentConverter` in [src/converters/pdf/document-converter.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/converters/pdf/document-converter.js) for `txt` -> `pdf`/`html`, `md` -> `html`/`pdf`/`txt`, `html` -> `txt`, `json` -> `txt`, and `pdf` -> `txt`
+  * [x] Implement transparent limitation handling for unsupported document pairs (`pdf -> png/jpg`, `docx -> pdf`) with UI callouts and `UNSUPPORTED_FORMAT` errors
+  * [x] Register `DocumentConverter` with `ConverterManager` in [src/core/app.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/app.js)
+  * [x] Create comprehensive test suite [tests/phase6-document-conversion.test.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/tests/phase6-document-conversion.test.js) (98 assertions passed)
+
 ---
 
 ## Current Tasks
 
-* [ ] Ready to start **Phase 6 — PDF / Document**
-  * [ ] Evaluate and bundle local browser-compatible document libraries
-  * [ ] Implement document converter in `src/converters/pdf/document-converter.js`
-  * [ ] Support realistic document conversions without remote APIs or fake outputs
+* [ ] Ready to start **Phase 7 — Audio / Video**
+  * [ ] Integrate local WebAssembly engine (local FFmpeg WASM build)
+  * [ ] Support core audio and video transcode profiles locally
+  * [ ] Implement worker-based progress and cancellation
 
 ---
 

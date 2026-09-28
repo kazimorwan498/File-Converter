@@ -1,13 +1,13 @@
 # Project State
 
 ## Current Phase
-Phase 5 — Conversion Queue (Complete) / Phase 6 — PDF / Document (Ready to start)
+Phase 6 — PDF / Document (Complete) / Phase 7 — Audio / Video (Ready to start)
 
 ## Current Task
-Completed Phase 5 Conversion Queue: Connected real converter engine to file queue, sequential batch processing, live conversion status synchronization (`queued`, `preparing`, `converting`, `completed`, `cancelled`, `failed`), real-time progress bar dispatching, item-level and batch cancellation, retry failed conversion support, individual and batch sequential downloads with delay throttling, automatic output filename generation, and comprehensive object URL cleanup.
+Completed Phase 6 PDF & Document Offline Conversion: Implemented native, offline document transformation suite without external CDNs or remote APIs. Added `PdfDocument` (PDF 1.4 generator with word wrapping, pagination, headers, footers), `MarkdownParser` (Markdown to HTML5, styled multi-page PDF, and plain text), `PdfExtractor` (text layer extraction from PDF streams with FlateDecode decompression via native `DecompressionStream`), and `DocumentConverter` registered with `ConverterManager`. Added limitation handling where unsupported conversions (e.g. `pdf -> png`, `docx -> pdf`) are never faked, clearly marked unsupported in the UI with technical explanation callouts, and safely rejected. Created unit test suite `tests/phase6-document-conversion.test.js` validating all 98 Phase 6 assertions.
 
 ## Overall Progress
-60% (Phases 0 through 5 completed and verified; Ready for Phase 6 PDF & Document offline conversion)
+68% (Phases 0 through 6 completed and verified; Ready for Phase 7 Audio & Video local WASM conversion)
 
 ## Completed Tasks
 - [x] Analyzed requirements from `docs/PRD.md` and structure from `docs/File-Structure.md`
@@ -25,11 +25,20 @@ Completed Phase 5 Conversion Queue: Connected real converter engine to file queu
   - Added individual download button on completed items and batch "Download All" with 250ms interval throttling
   - Implemented `generateOutputFilename(originalName, targetFormat)` in `src/utils/formatters.js`
   - Enhanced `DownloadManager` in `src/core/download-manager.js` with active URL tracking and explicit `revokeUrl` / `revokeAll`
-  - Created unit test suite `tests/phase5-conversion-queue.test.js` validating all 26 Phase 5 queue assertions
-- [x] Verified zero errors with `npm test` (183 assertions passing across Phases 1, 2, 3, 4, and 5) and `npm run build`
+  - Created unit test suite `tests/phase5-conversion-queue.test.js` (26 assertions passed)
+- [x] Phase 6 PDF & Document:
+  - Determined reliable browser-native document transformation boundaries
+  - Built `PdfDocument` (`src/converters/pdf/pdf-generator.js`): spec-compliant PDF 1.4 multi-page document generator with word-wrapping, margins, typography, page numbers ("Page X of Y"), and Base-14 fonts
+  - Built `MarkdownParser` (`src/converters/pdf/markdown-parser.js`): offline parser compiling Markdown to styled HTML5 documents, styled multi-page PDFs, and stripped plain text
+  - Built `PdfExtractor` (`src/converters/pdf/pdf-extractor.js`): stream-based text extractor supporting `FlateDecode` streams via native Web Streams API (`DecompressionStream`), with transparent detection of scanned/empty documents
+  - Built `DocumentConverter` (`src/converters/pdf/document-converter.js`): standard converter implementing `BaseConverter` for `txt` -> `pdf`/`html`, `md` -> `html`/`pdf`/`txt`, `html` -> `txt`, `json` -> `txt`, and `pdf` -> `txt`
+  - Transparent limitation handling: Unsupported document conversions (`pdf -> png/jpg`, `docx -> pdf`) are never faked, marked as unsupported with technical explanation callouts in the UI, and rejected with `UNSUPPORTED_FORMAT`
+  - Connected `DocumentConverter` to `ConverterManager` in `src/core/app.js` with live limitation callout boxes and disabled buttons for unsupported target pairs
+  - Created unit test suite `tests/phase6-document-conversion.test.js` (98 assertions passed)
+- [x] Verified zero errors with `npm test` (281 assertions passing across Phases 1 through 6) and `npm run build`
 
 ## In Progress
-None (Phase 5 completed and verified; awaiting instruction for Phase 6)
+None (Phase 6 completed and verified; awaiting instruction for Phase 7)
 
 ## Files Created
 - `package.json`
@@ -50,6 +59,10 @@ None (Phase 5 completed and verified; awaiting instruction for Phase 6)
 - `src/core/download-manager.js`
 - `src/utils/formatters.js`
 - `src/converters/image/image-converter.js`
+- `src/converters/pdf/pdf-generator.js`
+- `src/converters/pdf/markdown-parser.js`
+- `src/converters/pdf/pdf-extractor.js`
+- `src/converters/pdf/document-converter.js`
 - `src/converters/pdf/.gitkeep`
 - `src/converters/audio/.gitkeep`
 - `src/converters/video/.gitkeep`
@@ -61,6 +74,7 @@ None (Phase 5 completed and verified; awaiting instruction for Phase 6)
 - `tests/phase3-converter-engine.test.js`
 - `tests/phase4-image-conversion.test.js`
 - `tests/phase5-conversion-queue.test.js`
+- `tests/phase6-document-conversion.test.js`
 - `PROJECT_STATE.md`
 - `CHANGELOG.md`
 - `TODO.md`
@@ -68,9 +82,8 @@ None (Phase 5 completed and verified; awaiting instruction for Phase 6)
 
 ## Files Modified
 - `src/core/app.js`
-- `src/core/download-manager.js`
-- `src/utils/formatters.js`
 - `src/styles/main.css`
+- `src/utils/formatters.js`
 - `package.json`
 - `PROJECT_STATE.md`
 - `CHANGELOG.md`
@@ -83,16 +96,40 @@ None (Phase 5 completed and verified; awaiting instruction for Phase 6)
 - `native-image-converter` (`Browser-Native Image Converter`):
   - Supported inputs: `png`, `jpg`, `jpeg`, `webp`
   - Supported outputs: `png`, `jpg`, `jpeg`, `webp`
-  - Fully hooked to queue processing, live progress bars, cancellation, retry, and download pipelines
+  - Quality slider, transparency background fill, dimensions
+- `native-document-converter` (`Browser-Native Document Converter`):
+  - Supported inputs: `txt`, `md`, `markdown`, `html`, `json`, `pdf`
+  - Supported outputs: `pdf`, `txt`, `html`
+  - Reliable conversions:
+    - `txt` -> `pdf` (word wrapping, pagination, headers, footers)
+    - `txt` -> `html` (paragraphs, line breaks, HTML escaping)
+    - `md` -> `html` (semantic HTML5 document with CSS styling)
+    - `md` -> `pdf` (styled multi-page PDF document)
+    - `md` -> `txt` (clean markdown syntax stripping)
+    - `html` -> `txt` (DOM-based text extraction)
+    - `json` -> `txt` (2-space pretty formatted JSON)
+    - `pdf` -> `txt` (FlateDecode text layer extraction)
+  - Explicitly rejected & explained limitations:
+    - `pdf -> png/jpg` (requires desktop rasterization engine)
+    - `docx -> pdf` (requires desktop office engine)
+    - Scanned/image-only PDF text extraction (requires OCR engine)
 
 ## Tests Passed
-- `tests/phase1-foundation.test.js`: All 29 assertions passed (HTML elements, accessibility landmarks, CSS design tokens, StateManager theme cycling, App lifecycle)
-- `tests/phase2-filesystem.test.js`: All 48 assertions passed (format utilities, multi-file ingestion, queue item attributes, empty file rejection, duplicate rejection, unsupported format rejection, format switching, item removal, queue clearing)
-- `tests/phase3-converter-engine.test.js`: All 43 assertions passed (BaseConverter contract, registry resolution, format detection, lifecycle transitions, progress events, AbortController cancellation, cancelAll, ConversionError codes)
-- `tests/phase4-image-conversion.test.js`: All 37 assertions passed (8 conversion pairs, MIME mappings, alpha support, transparency background fill, quality control, aspect-ratio resizing, progress events, AbortSignal cancellation, dimension extraction)
-- `tests/phase5-conversion-queue.test.js`: All 26 assertions passed (one file conversion, multiple files sequential processing, mixed image formats, failed conversion handling, retry recovery, cancellation, download manager tracking, URL revocation)
-- Production build test (`npm run build`): Successfully built 14 modules in 256ms with 0 errors
-- Dev server HTTP check: `http://localhost:3000` responds HTTP 200 OK
+- `tests/phase1-foundation.test.js`: All 29 assertions passed
+- `tests/phase2-filesystem.test.js`: All 48 assertions passed
+- `tests/phase3-converter-engine.test.js`: All 43 assertions passed
+- `tests/phase4-image-conversion.test.js`: All 37 assertions passed
+- `tests/phase5-conversion-queue.test.js`: All 26 assertions passed
+- `tests/phase6-document-conversion.test.js`: All 98 assertions passed
+  - PdfDocument instantiation, metadata, typography, multi-page pagination, headers, footers
+  - MarkdownParser full HTML5 output, styling, plain text stripping, multi-page PDF generation
+  - PdfExtractor text extraction, FlateDecode decompression, non-PDF rejection, scanned PDF OCR limitation handling
+  - DocumentConverter format matrix, limitation querying, conversion execution across all supported pairs
+  - Honest error handling for unsupported pairs (`UNSUPPORTED_FORMAT`)
+  - AbortController cancellation and progress dispatching
+  - ConverterRegistry and ConverterManager integration
+- Production build test (`npm run build`): Successfully built 18 modules in 542ms with 0 errors
+- Total passing assertions across all phases: 281 passed, 0 failed
 
 ## Tests Failed
 None
@@ -101,7 +138,6 @@ None
 None
 
 ## Pending Tasks
-- Phase 6: PDF / Document (Local browser-compatible document conversions: PDF text extraction, markdown/text conversions)
 - Phase 7: Audio / Video (Local WASM engine integration)
 - Phase 8: Web Workers (Background thread offloading)
 - Phase 9: PWA / Offline (Manifest, Service Worker, cache-first strategy)
@@ -110,17 +146,18 @@ None
 - Phase 12: Finalization (Production build, documentation, final validation)
 
 ## Next Recommended Task
-Phase 6 — PDF / Document: Implement local browser-compatible document converter (`src/converters/pdf/document-converter.js`) supporting text extraction and document transformations without online APIs.
+Phase 7 — Audio / Video: Integrate local WebAssembly audio/video processing engine for offline media conversion.
 
 ## Important Decisions
-- Sequential execution: Queue processes files sequentially to protect browser memory and prevent UI thread starvation.
-- Non-blocking download throttling: Batch downloads use a 250ms staggered interval to prevent browser popup blockers from suppressing multiple downloads.
-- Explicit object URL management: Preview URLs and download Blob URLs are tracked and explicitly revoked upon removal, clearing, or download completion.
+- Zero remote APIs and zero CDNs: All document transformations (PDF generation, Markdown parsing, PDF stream extraction) run 100% locally in browser memory.
+- Spec-compliant PDF 1.4: Pure JavaScript PDF generator produces standard-compliant PDFs with page trees, indirect objects, catalog, cross-reference tables, and Base-14 standard fonts without third-party dependencies.
+- Native decompression: FlateDecode streams in PDF documents are decompressed via the native Web Streams API (`DecompressionStream('deflate')`).
+- No fake conversions: Unsupported document conversions (like rasterizing vector PDFs to PNG or converting DOCX files) are never faked; they are clearly marked as unsupported in the UI with detailed explanation callouts.
 
 ## Do Not Repeat
 - Do not add remote CDN links or remote font/script tags.
 - Do not mock or fake conversion outputs; unsupported formats must fail transparently.
-- Do not start Phase 6 automatically until instructed.
+- Do not start Phase 7 automatically until instructed.
 
 ## Last Updated
 2026-09-28

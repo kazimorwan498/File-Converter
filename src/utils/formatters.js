@@ -41,8 +41,10 @@ export const SUPPORTED_FORMATS = {
 
   // Documents
   pdf: { category: 'document', mime: 'application/pdf', outputs: ['txt', 'png'] },
-  txt: { category: 'document', mime: 'text/plain', outputs: ['pdf'] },
-  md: { category: 'document', mime: 'text/markdown', outputs: ['pdf', 'txt', 'html'] },
+  txt: { category: 'document', mime: 'text/plain', outputs: ['pdf', 'html'] },
+  md: { category: 'document', mime: 'text/markdown', outputs: ['html', 'pdf', 'txt'] },
+  markdown: { category: 'document', mime: 'text/markdown', outputs: ['html', 'pdf', 'txt'] },
+  html: { category: 'document', mime: 'text/html', outputs: ['txt'] },
   json: { category: 'document', mime: 'application/json', outputs: ['txt'] },
 
   // Audio
