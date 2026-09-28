@@ -15,17 +15,17 @@ A 100% offline, privacy-first file conversion web application built with vanilla
 - **Build System**: Vite with local ES Modules and local static assets.
 - **Core Engine**: Converter Registry pattern with standard lifecycle interface (`canConvert`, `convert`, `cancel`, `getConversionLimitation`).
 - **Conversion Pipelines**:
-  - **Image Conversion**: Browser-native Canvas / `createImageBitmap` (PNG, JPG, JPEG, WebP) with quality controls and transparency handling.
+  - **Image Conversion**: Background Web Worker execution (`image.worker.js`) using `OffscreenCanvas` and `createImageBitmap` (PNG, JPG, JPEG, WebP) with zero-copy buffer transfer and transparent main-thread fallback.
   - **Document Conversion**: Pure JavaScript offline PDF 1.4 multi-page document generator (`PdfDocument`), Markdown compiler (`MarkdownParser`), and PDF text extractor (`PdfExtractor`).
-  - **Audio & Video Conversion**: Locally bundled FFmpeg 0.12 WebAssembly engine (`ffmpeg-core.js` and `ffmpeg-core.wasm` in `public/ffmpeg/` and `libs/local/ffmpeg/`).
-- **Memory Hygiene**: Ephemeral memory management, automatic unlinking of virtual filesystem files (`deleteFile`), and explicit `URL.revokeObjectURL()` cleanup.
-- **Concurrency & Responsiveness**: AbortSignal-based cancellation with immediate worker termination; non-blocking sequential queue execution.
+  - **Audio & Video Conversion**: Locally bundled FFmpeg 0.12 WebAssembly engine (`ffmpeg-core.js` and `ffmpeg-core.wasm` in `public/ffmpeg/` and `libs/local/ffmpeg/`) running in a dedicated WASM worker.
+- **Memory Hygiene**: Ephemeral memory management, zero-copy transferable `ArrayBuffer` pipelines, automatic unlinking of virtual filesystem files (`deleteFile`), idle worker termination, and explicit `URL.revokeObjectURL()` cleanup.
+- **Concurrency & Responsiveness**: Heavy CPU workloads offloaded to dedicated Web Workers to maintain a 60fps responsive UI; instant cancellation with worker termination; non-blocking sequential queue execution.
 
 ## Supported Formats
 
 | Category | Input Formats | Output Formats | Processing Engine |
 | :--- | :--- | :--- | :--- |
-| **Image** | PNG, JPG, JPEG, WebP | PNG, JPG, JPEG, WebP | Browser-native Canvas API |
+| **Image** | PNG, JPG, JPEG, WebP | PNG, JPG, JPEG, WebP | Background Web Worker (`OffscreenCanvas`) / Canvas |
 | **Document** | TXT, MD, Markdown, HTML, JSON, PDF | PDF, TXT, HTML | Native JS Generator / Parser / Extractor |
 | **Audio** | MP3, WAV, OGG, AAC, M4A, FLAC | MP3, WAV, OGG, AAC, FLAC | Bundled FFmpeg WebAssembly |
 | **Video** | MP4, WebM, MOV, MKV, AVI | MP4, WebM, MP3, WAV | Bundled FFmpeg WebAssembly |

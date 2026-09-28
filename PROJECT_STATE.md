@@ -1,13 +1,13 @@
 # Project State
 
 ## Current Phase
-Phase 7 — Audio / Video (Complete) / Phase 8 — Web Workers (Ready to start)
+Phase 8 — Web Workers (Complete) / Phase 9 — PWA / Offline (Ready to start)
 
 ## Current Task
-Completed Phase 7 Audio & Video Offline Conversion: Integrated locally bundled browser-compatible FFmpeg WebAssembly engine (`ffmpeg-core.js` and `ffmpeg-core.wasm` in `public/ffmpeg/` and `libs/local/ffmpeg/`). Implemented singleton `MediaEngine` (`src/converters/audio/media-engine.js`) with lazy local WASM loading, audio/video transcode profiles (MP3, WAV, OGG, AAC, M4A, FLAC, MP4, WebM, MOV, MKV, AVI), video-to-audio extraction (`mp4 -> mp3/wav`), memory-conscious virtual filesystem cleanup (`deleteFile`), and immediate worker termination on cancellation. Implemented `AudioConverter` (`src/converters/audio/audio-converter.js`) and `VideoConverter` (`src/converters/video/video-converter.js`) extending `BaseConverter` with honest limitation reporting for unsupported/proprietary codecs (`wma`, `rmvb`, `wmv`). Registered both converters with `ConverterManager` in `src/core/app.js` and updated queue UI with limitation banners and format dropdown annotations. Created comprehensive unit test suite `tests/phase7-audio-video.test.js` validating all 57 Phase 7 assertions (338 total assertions passing across Phases 1 through 7).
+Completed Phase 8 Web Workers & Background Offloading: Offloaded CPU-heavy image conversions to a dedicated Web Worker (`src/workers/image.worker.js`) using `OffscreenCanvas`, `createImageBitmap`, and zero-copy transferable `ArrayBuffer` pipelines. Built `ImageWorkerClient` (`src/workers/image-worker-client.js`) and `WorkerPool` (`src/workers/worker-pool.js`) managing worker lifecycle, progress events, error boundaries (`WORKER_CRASH`), immediate worker termination on cancellation, and memory cleanup (zero memory leaks). Integrated `ImageWorkerClient` into `ImageConverter` with transparent fallback to main-thread canvas where workers are unsupported. Wired worker termination and cleanup into `App` queue actions (`clearAllQueue`, `cancelBatchQueue`, `convertAllQueue`). Created unit test suite `tests/phase8-web-workers.test.js` validating all 43 Phase 8 assertions (381 total assertions passing across Phases 1 through 8).
 
 ## Overall Progress
-78% (Phases 0 through 7 completed and verified; Ready for Phase 8 Web Workers offloading)
+85% (Phases 0 through 8 completed and verified; Ready for Phase 9 PWA & Offline Caching)
 
 ## Completed Tasks
 - [x] Analyzed requirements from `docs/PRD.md` and structure from `docs/File-Structure.md`
@@ -44,10 +44,18 @@ Completed Phase 7 Audio & Video Offline Conversion: Integrated locally bundled b
   - Transparent limitation handling: Unsupported media formats (`wma`, `rmvb`, `wmv`, `m4p`) are never faked, clearly flagged in format dropdowns, explained via technical callouts, and rejected with `UNSUPPORTED_FORMAT`
   - Integrated `AudioConverter` and `VideoConverter` with `ConverterManager` and Queue UI in `src/core/app.js`
   - Created unit test suite `tests/phase7-audio-video.test.js` (57 assertions passed)
-- [x] Verified zero errors with `npm test` (338 assertions passing across Phases 1 through 7) and `npm run build`
+- [x] Phase 8 Web Workers & Background Offloading:
+  - Built dedicated `ImageWorker` (`src/workers/image.worker.js`) executing image decoding, aspect-ratio scaling, OffscreenCanvas rendering, transparency handling, and encoding off the main UI thread
+  - Transferred image buffers via zero-copy `ArrayBuffer` transfer to prevent memory bloat
+  - Built `ImageWorkerClient` (`src/workers/image-worker-client.js`) orchestrating worker initialization, message dispatching, live progress callbacks, error handling (`WORKER_CRASH`), instant cancellation via worker termination, and idle cleanup
+  - Built `WorkerPool` (`src/workers/worker-pool.js`) providing concurrency limiting, idle worker termination, and robust cancellation handling
+  - Upgraded `ImageConverter` (`src/converters/image/image-converter.js`) to seamlessly offload conversions to Web Workers while preserving full backward compatibility with fallback to main-thread canvas
+  - Wired worker termination and cleanup into `App` queue actions (`cancelBatchQueue`, `convertAllQueue`, `clearAllQueue`)
+  - Created comprehensive unit test suite `tests/phase8-web-workers.test.js` (43 assertions passed)
+- [x] Verified zero errors with `npm test` (381 assertions passing across Phases 1 through 8) and `npm run build`
 
 ## In Progress
-None (Phase 7 completed and verified; awaiting instruction for Phase 8)
+None (Phase 8 completed and verified; awaiting instruction for Phase 9)
 
 ## Files Created
 - `package.json`
@@ -79,6 +87,9 @@ None (Phase 7 completed and verified; awaiting instruction for Phase 8)
 - `src/converters/audio/media-engine.js`
 - `src/converters/audio/audio-converter.js`
 - `src/converters/video/video-converter.js`
+- `src/workers/image.worker.js`
+- `src/workers/image-worker-client.js`
+- `src/workers/worker-pool.js`
 - `src/converters/pdf/.gitkeep`
 - `src/converters/audio/.gitkeep`
 - `src/converters/video/.gitkeep`
@@ -92,12 +103,15 @@ None (Phase 7 completed and verified; awaiting instruction for Phase 8)
 - `tests/phase5-conversion-queue.test.js`
 - `tests/phase6-document-conversion.test.js`
 - `tests/phase7-audio-video.test.js`
+- `tests/phase8-web-workers.test.js`
 - `PROJECT_STATE.md`
 - `CHANGELOG.md`
 - `TODO.md`
 - `README.md`
 
 ## Files Modified
+- `src/converters/image/image-converter.js`
+- `src/core/converter-manager.js`
 - `src/core/app.js`
 - `src/utils/formatters.js`
 - `src/styles/main.css`
@@ -118,7 +132,9 @@ None (Phase 7 completed and verified; awaiting instruction for Phase 8)
 - `native-image-converter` (`Browser-Native Image Converter`):
   - Supported inputs: `png`, `jpg`, `jpeg`, `webp`
   - Supported outputs: `png`, `jpg`, `jpeg`, `webp`
+  - Background Web Worker processing via `image.worker.js` and `OffscreenCanvas`
   - Quality slider, transparency background fill, dimensions
+  - Transparent fallback to main-thread canvas when workers are unsupported
 - `native-document-converter` (`Browser-Native Document Converter`):
   - Supported inputs: `txt`, `md`, `markdown`, `html`, `json`, `pdf`
   - Supported outputs: `pdf`, `txt`, `html`
@@ -127,12 +143,12 @@ None (Phase 7 completed and verified; awaiting instruction for Phase 8)
 - `native-audio-converter` (`Browser-Native Audio Converter`):
   - Supported inputs: `mp3`, `wav`, `ogg`, `aac`, `m4a`, `flac`
   - Supported outputs: `mp3`, `wav`, `ogg`, `aac`, `flac`
-  - Reliable conversions: Transcode between uncompressed PCM, Vorbis, AAC, and MP3 via local WASM FFmpeg
+  - Reliable conversions: Transcode between uncompressed PCM, Vorbis, AAC, and MP3 via local WASM FFmpeg Web Worker
   - Limitations handled: `wma`, `m4p` (DRM/proprietary codecs unsupported)
 - `native-video-converter` (`Browser-Native Video Converter`):
   - Supported inputs: `mp4`, `webm`, `mov`, `mkv`, `avi`
   - Supported outputs: `mp4`, `webm`, `mp3`, `wav`
-  - Reliable conversions: Video transcode (`mp4 <-> webm`, `mov -> mp4/webm`) and video-to-audio extraction (`mp4/webm -> mp3/wav`)
+  - Reliable conversions: Video transcode (`mp4 <-> webm`, `mov -> mp4/webm`) and video-to-audio extraction (`mp4/webm -> mp3/wav`) via local WASM FFmpeg Web Worker
   - Limitations handled: `rmvb`, `wmv` (unsupported legacy/proprietary codecs)
 
 ## Tests Passed
@@ -143,20 +159,25 @@ None (Phase 7 completed and verified; awaiting instruction for Phase 8)
 - `tests/phase5-conversion-queue.test.js`: All 26 assertions passed
 - `tests/phase6-document-conversion.test.js`: All 98 assertions passed
 - `tests/phase7-audio-video.test.js`: All 57 assertions passed
-  - MediaEngine singleton pattern and initialization
-  - Audio and video argument builders (`libmp3lame`, `16-bit PCM`, `libvorbis`, `H.264`, `VPX`)
-  - MIME type resolution for all supported media containers
-  - AudioConverter format support matrix and limitation reporting
-  - WAV -> MP3, WAV -> OGG, WAV -> AAC transcoding with valid output Blobs
-  - Rejection of unsupported audio codecs (`wma`, `m4p`) with clear rationale
-  - VideoConverter format support matrix and video-to-audio extraction
-  - MP4 -> WebM video transcode and MP4 -> MP3 audio extraction
-  - Rejection of unsupported video codecs (`rmvb`, `wmv`)
-  - AbortController cancellation handling with worker termination
-  - Progress event dispatching up to 100%
-  - ConverterManager integration and full pipeline execution
-- Production build test (`npm run build`): Successfully built 31 modules with 0 errors
-- Total passing assertions across all phases: 338 passed, 0 failed
+- `tests/phase8-web-workers.test.js`: All 43 assertions passed
+  - WorkerPool instantiation, worker acquisition, task queueing under saturation
+  - Task execution and worker release triggering queued tasks
+  - WorkerPool cancellation with AbortSignal terminating busy workers
+  - WorkerPool terminateAll clearing workers and task queues
+  - ImageWorkerClient message protocol: PROGRESS (15%, 60%), SUCCESS with transferred ArrayBuffer
+  - Output Blob reconstruction from transferred buffer with proper MIME and dimensions
+  - Active jobs map cleanup on completion (zero memory leaks)
+  - Worker error handling: CORRUPTED_FILE preservation
+  - Worker crash handling: WORKER_CRASH code, worker termination, and state reset
+  - Cancellation handling: AbortSignal terminating busy worker immediately and releasing RAM
+  - Client idle cleanup terminating workers
+  - ImageConverter worker client initialization and convert() delegation
+  - Fallback to convertOnMainThread when worker is disabled or encounters issue
+  - Cancellation from worker re-thrown immediately without falling back to main thread
+  - ConverterManager integration and getConverter helper resolution
+  - Clean worker cleanup and termination
+- Production build test (`npm run build`): Successfully built 32 modules with separate worker chunk (`dist/assets/image.worker-CiGeFHjO.js`) in 411ms with 0 errors
+- Total passing assertions across all phases: 381 passed, 0 failed
 
 ## Tests Failed
 None
@@ -165,26 +186,26 @@ None
 None
 
 ## Pending Tasks
-- Phase 8: Web Workers (Background thread offloading)
 - Phase 9: PWA / Offline (Manifest, Service Worker, cache-first strategy)
 - Phase 10: Testing (Format validation, memory checks, corrupted file handling)
 - Phase 11: Optimization (Memory management, Blob disposal, UI responsiveness)
 - Phase 12: Finalization (Production build, documentation, final validation)
 
 ## Next Recommended Task
-Phase 8 — Web Workers: Offload intensive conversion workflows (Canvas image processing, PDF generation, FFmpeg tasks) to dedicated Web Workers to ensure a fluid 60fps UI.
+Phase 9 — PWA / Offline: Implement Service Worker (`sw.js`), Web App Manifest (`manifest.json`), cache-first offline strategies, install prompt handling, and offline indicator.
 
 ## Important Decisions
-- Zero remote APIs and zero CDNs: All audio and video processing is performed entirely client-side using locally bundled `@ffmpeg/core` WebAssembly binaries (`ffmpeg-core.js` and `ffmpeg-core.wasm`).
-- Single-threaded WASM build: Using `@ffmpeg/core` single-threaded build guarantees compatibility across browser environments while keeping bundle sizes manageable.
-- Virtual FS memory management: `MediaEngine` explicitly unlinks both input and output files via `ffmpeg.deleteFile()` immediately after reading output buffers to prevent WASM heap exhaustion.
-- Cancellation via worker termination: Aborting active conversions terminates the FFmpeg worker thread immediately, instantly freeing CPU and memory.
-- No fake conversions: Proprietary/unsupported formats (`wma`, `rmvb`, `wmv`, `m4p`) are never faked; they are clearly flagged in the format dropdowns and UI limitation callouts, and rejected cleanly.
+- Worker-offloaded image pipeline: CPU-intensive operations (image decoding, scaling, canvas rendering, JPEG/WebP compression) run in a dedicated Web Worker (`image.worker.js`) using `OffscreenCanvas`, ensuring the UI stays completely responsive at 60fps.
+- Zero-copy buffer transfer: Input and output ArrayBuffers are transferred via Transferable Objects (`postMessage(..., [buffer])`), eliminating memory cloning overhead.
+- Immediate worker termination on abort: Cancelling active conversions terminates the worker thread immediately via `worker.terminate()`, instantly halting CPU load and releasing WASM/Canvas buffers.
+- Graceful main-thread fallback: If a browser or environment lacks `OffscreenCanvas` or Web Worker support, `ImageConverter` seamlessly executes `convertOnMainThread()` with 0 user-facing disruption.
+- Lightweight operations remain on main thread: Text transformations, JSON pretty-printing, and lightweight markdown parsing remain on the main thread to avoid worker serialization overhead.
 
 ## Do Not Repeat
 - Do not add remote CDN links or remote font/script tags.
 - Do not mock or fake conversion outputs; unsupported formats must fail transparently.
-- Do not start Phase 8 automatically until instructed.
+- Do not move lightweight operations into workers unnecessarily.
+- Do not start Phase 9 automatically until instructed.
 
 ## Last Updated
 2026-09-28

@@ -5,6 +5,7 @@
  */
 import { BaseConverter } from '../../core/base-converter.js';
 import { ConversionError } from '../../core/conversion-error.js';
+import { ImageWorkerClient } from '../../workers/image-worker-client.js';
 
 export class ImageConverter extends BaseConverter {
   constructor() {
@@ -16,6 +17,7 @@ export class ImageConverter extends BaseConverter {
       outputFormats: ['png', 'jpg', 'jpeg', 'webp'],
       inputMimeTypes: ['image/png', 'image/jpeg', 'image/webp']
     });
+    this.workerClient = new ImageWorkerClient();
   }
 
   /**
@@ -179,7 +181,7 @@ export class ImageConverter extends BaseConverter {
   }
 
   /**
-   * Execute real browser-native image conversion
+   * Execute image conversion, offloading CPU-heavy rendering to Web Worker when available
    *
    * @param {File} file
    * @param {Object} options
@@ -189,11 +191,39 @@ export class ImageConverter extends BaseConverter {
    * @param {number} [options.height] - Optional target height
    * @param {boolean} [options.maintainAspectRatio=true] - Preserve aspect ratio when resizing
    * @param {string} [options.backgroundColor='#ffffff'] - Solid background for formats without alpha
+   * @param {boolean} [options.preferWorker=true] - Prefer background Web Worker execution
    * @param {function(number, string=): void} [options.onProgress]
    * @param {AbortSignal} [options.signal]
    * @returns {Promise<{ blob: Blob, mimeType: string, filename: string, width: number, height: number }>}
    */
   async convert(file, options = {}) {
+    const preferWorker = options.preferWorker !== false;
+
+    // 1. Offload to Web Worker if supported to keep main UI thread 100% responsive
+    if (preferWorker && ImageWorkerClient.isSupported()) {
+      try {
+        return await this.workerClient.convert(file, options);
+      } catch (workerErr) {
+        // If cancelled, re-throw cancellation immediately without falling back
+        if (workerErr.code === 'CANCELLED') {
+          throw workerErr;
+        }
+        // If worker fails due to worker environment issue, fall back to main thread
+        console.warn('Image worker conversion encountered an issue, falling back to main-thread canvas:', workerErr.message);
+      }
+    }
+
+    // 2. Direct Canvas conversion (main-thread or fallback)
+    return this.convertOnMainThread(file, options);
+  }
+
+  /**
+   * Direct Canvas conversion on main thread (used as worker fallback or in environments without Workers)
+   * @param {File} file
+   * @param {Object} options
+   * @returns {Promise<{ blob: Blob, mimeType: string, filename: string, width: number, height: number }>}
+   */
+  async convertOnMainThread(file, options = {}) {
     const {
       outputFormat,
       quality = 0.92,
@@ -313,4 +343,23 @@ export class ImageConverter extends BaseConverter {
     cleanup();
     return { width, height };
   }
+
+  /**
+   * Terminate active worker to immediately free memory
+   */
+  terminateWorker() {
+    if (this.workerClient) {
+      this.workerClient.terminate();
+    }
+  }
+
+  /**
+   * Clean up worker if idle
+   */
+  cleanupWorker() {
+    if (this.workerClient) {
+      this.workerClient.cleanup();
+    }
+  }
 }
+

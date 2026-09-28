@@ -84,21 +84,27 @@
   * [x] Register both converters with `ConverterManager` and wire into queue lifecycle in [src/core/app.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/app.js)
   * [x] Create unit test suite [tests/phase7-audio-video.test.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/tests/phase7-audio-video.test.js) (57 assertions passed)
 
+* [x] **Phase 8 — Web Workers**
+  * [x] Implement dedicated `ImageWorker` in [src/workers/image.worker.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/workers/image.worker.js) for `OffscreenCanvas` rendering and encoding
+  * [x] Implement zero-copy buffer transfer with transferable `ArrayBuffer` instances
+  * [x] Implement `ImageWorkerClient` in [src/workers/image-worker-client.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/workers/image-worker-client.js) with progress dispatching, cancellation, and error handling
+  * [x] Implement `WorkerPool` in [src/workers/worker-pool.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/workers/worker-pool.js) with concurrency limiting and idle cleanup
+  * [x] Upgrade `ImageConverter` in [src/converters/image/image-converter.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/converters/image/image-converter.js) to offload to worker with main-thread canvas fallback
+  * [x] Hook worker termination and idle cleanup into queue lifecycle actions in [src/core/app.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/app.js)
+  * [x] Create comprehensive unit test suite [tests/phase8-web-workers.test.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/tests/phase8-web-workers.test.js) (43 assertions passed)
+
 ---
 
 ## Current Tasks
 
-* [ ] Ready to start **Phase 8 — Web Workers**
-  * [ ] Offload intensive conversion workflows to dedicated Web Workers (`src/workers/`)
-  * [ ] Maintain responsive 60fps UI during heavy file transformations
+* [ ] Ready to start **Phase 9 — PWA / Offline**
+  * [ ] Implement Web App Manifest (`public/manifest.json`)
+  * [ ] Implement Service Worker (`sw.js`) with complete cache-first offline strategy
+  * [ ] Provide PWA installation prompt and offline readiness indicators
 
 ---
 
 ## Pending Tasks
-
-### Phase 8 — Web Workers
-* [ ] Offload intensive conversion workflows to dedicated Web Workers (`src/workers/`)
-* [ ] Maintain responsive 60fps UI during heavy file transformations
 
 ### Phase 9 — PWA / Offline
 * [ ] Implement Web App Manifest (`public/manifest.json`)

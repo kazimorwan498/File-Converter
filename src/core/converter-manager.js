@@ -76,6 +76,16 @@ export class ConverterManager {
   }
 
   /**
+   * Find converter for given input and output
+   * @param {File | string} fileOrType
+   * @param {string} outputFormat
+   * @returns {import('./base-converter.js').BaseConverter | null}
+   */
+  getConverter(fileOrType, outputFormat) {
+    return this.registry.findConverter(fileOrType, outputFormat);
+  }
+
+  /**
    * Execute conversion on a single File object
    * Clean API: converterManager.convert(file, options)
    *

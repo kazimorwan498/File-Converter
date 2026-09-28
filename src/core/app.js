@@ -813,6 +813,7 @@ export class App {
   cancelBatchQueue() {
     this.isBatchCancelled = true;
     this.converterManager.cancelAll();
+    this.imageConverter.terminateWorker();
     this.announce('Cancelled batch conversion.');
   }
 
@@ -859,6 +860,7 @@ export class App {
     }
 
     this.isBatchProcessing = false;
+    this.imageConverter.cleanupWorker();
 
     // Restore Convert All button
     if (this.convertAllBtn) {
@@ -893,6 +895,8 @@ export class App {
     if (this.isBatchProcessing) {
       this.cancelBatchQueue();
     }
+
+    this.imageConverter.cleanupWorker();
 
     for (const url of this.previewUrls.values()) {
       try {
