@@ -6,20 +6,22 @@ All notable changes to the Offline File Converter project will be documented in 
 
 ### Added
 
+* Completed Phase 5 — Conversion Queue:
+  * Connected `ConverterManager` and `ImageConverter` to interactive queue lifecycle in `src/core/app.js`.
+  * Added sequential batch processing in `convertAllQueue` processing queued files one-by-one.
+  * Added real-time status badge synchronization (`Queued`, `Preparing`, `X%`, `Completed`, `Cancelled`, `Failed`).
+  * Added item-level cancellation (`btn-cancel-item`) and batch queue cancellation (`Cancel All` header button).
+  * Added retry mechanism on failed and cancelled conversions with instant state recovery.
+  * Added single-item download button on completed items and batch "Download All" with 250ms interval throttling in `DownloadManager`.
+  * Implemented `generateOutputFilename(originalName, targetFormat)` in `src/utils/formatters.js` with clean extension normalization.
+  * Implemented comprehensive object URL tracking and revocation in `DownloadManager` and `App` to eliminate memory leaks.
+  * Created unit test suite `tests/phase5-conversion-queue.test.js` validating one file, multiple sequential files, mixed image formats, failed conversions, retry recovery, cancellation, and download tracking.
 * Completed Phase 4 — Image Conversion:
-  * Implemented `ImageConverter` in `src/converters/image/image-converter.js` using browser-native Canvas, `OffscreenCanvas`, and `createImageBitmap`.
-  * Implemented bidirectional conversions for all required image pairs: PNG &rarr; JPG, PNG &rarr; WebP, JPG &rarr; PNG, JPG &rarr; WebP, JPEG &rarr; PNG, JPEG &rarr; WebP, WebP &rarr; PNG, WebP &rarr; JPG.
-  * Added quality control slider (0.01 - 1.0) with live percentage readout for lossy formats (JPG, WebP).
-  * Added transparency background handling: automatically fills a clean white background when converting transparent images to JPG/JPEG, and preserves alpha channel for PNG/WebP.
-  * Added image dimensions detection and aspect-ratio-locked resizing.
-  * Added real-time image thumbnail previews (`img.item-thumbnail`) using local object URLs.
-  * Added progress bar updates during conversion (decode &rarr; render &rarr; encode &rarr; complete).
-  * Added individual "Convert" and "Download" buttons on queue item cards.
-  * Added "Convert All" and "Download All" operations in queue header.
-  * Created unit test suite `tests/phase4-image-conversion.test.js` validating all 37 image conversion assertions.
+  * Implemented `ImageConverter` with quality controls, transparency handling, and aspect-ratio resizing.
+  * Unit test suite `tests/phase4-image-conversion.test.js`.
 * Completed Phase 3 — Converter Engine Architecture:
   * Implemented `BaseConverter`, `ConverterRegistry`, `ConverterManager`, and `ConversionError`.
-  * Created unit test suite `tests/phase3-converter-engine.test.js`.
+  * Unit test suite `tests/phase3-converter-engine.test.js`.
 * Completed Phase 2 — File System:
   * Implemented `FileManager` with multi-file ingestion, file validation, duplicate prevention, and queue operations.
   * Unit test suite `tests/phase2-filesystem.test.js`.
@@ -29,18 +31,19 @@ All notable changes to the Offline File Converter project will be documented in 
 
 ### Changed
 
-* Updated `src/core/app.js` to register `ImageConverter`, display thumbnails, show quality sliders, and execute conversions.
-* Updated `src/styles/main.css` with thumbnail preview, dimensions badge, quality slider, and progress bar styles.
-* Updated `package.json` to execute Phases 1 through 4 test suites on `npm test`.
-* Updated `PROJECT_STATE.md` and `TODO.md` to reflect Phase 4 completion.
+* Updated `src/core/app.js` with batch queue execution, item cancellation, retry handling, and download management.
+* Updated `src/core/download-manager.js` with `downloadAll` and URL tracking.
+* Updated `src/styles/main.css` with `.btn-cancel-item`, `.btn-retry-item`, and `.btn-danger` styles.
+* Updated `package.json` to execute Phases 1 through 5 test suites on `npm test`.
+* Updated `PROJECT_STATE.md` and `TODO.md` to reflect Phase 5 completion.
 
 ### Fixed
 
-* Memory leak prevention: Image preview URLs are tracked and explicitly revoked upon removal or queue clearing.
-* Prevented black background artifacts on transparent PNGs converted to JPG by drawing solid white background.
+* Guaranteed sequential execution order during multi-file conversion to maintain 60fps UI responsiveness.
+* Staggered batch download triggers to prevent browser popup blockers from dropping files.
 
 ### Tested
 
-* Executed `npm test`: 157 assertions passed across Phase 1, Phase 2, Phase 3, and Phase 4 test suites with 0 failures.
-* Executed `npm run build`: Production bundle transformed 14 modules in 404ms with 0 errors.
+* Executed `npm test`: 183 assertions passed across Phase 1 through 5 test suites with 0 failures.
+* Executed `npm run build`: Production bundle transformed 14 modules in 256ms with 0 errors.
 * Dev server HTTP check: `http://localhost:3000` is active and responsive.

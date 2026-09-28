@@ -1,13 +1,15 @@
 /**
  * Core Application Controller
  * Handles application lifecycle, theme system, dropzone event wiring,
- * multi-file ingestion, image previews, quality controls, and conversion execution.
+ * multi-file ingestion, sequential queue conversion, progress, cancellation, retry,
+ * individual/batch downloads, and resource cleanup.
  */
 import { StateManager } from './state-manager.js';
 import { FileManager } from './file-manager.js';
 import { ConverterManager } from './converter-manager.js';
 import { DownloadManager } from './download-manager.js';
 import { ImageConverter } from '../converters/image/image-converter.js';
+import { generateOutputFilename } from '../utils/formatters.js';
 
 export class App {
   constructor() {
@@ -22,6 +24,10 @@ export class App {
 
     // Track active object URLs for previews to prevent memory leaks
     this.previewUrls = new Map();
+
+    // Batch queue state
+    this.isBatchProcessing = false;
+    this.isBatchCancelled = false;
 
     // DOM references
     this.themeToggleBtn = null;
@@ -51,7 +57,7 @@ export class App {
     this.initThemeSystem();
     this.bindDropZoneEvents();
     this.bindQueueEvents();
-    console.info('Offline File Converter — Phase 4 Native Image Conversion ready.');
+    console.info('Offline File Converter — Phase 5 Conversion Queue ready.');
   }
 
   /**
@@ -92,7 +98,6 @@ export class App {
     const preference = this.stateManager.getThemePreference();
     this.applyTheme(preference);
 
-    // React to OS changes when theme is set to 'system'
     this.stateManager.onSystemThemeChange((effectiveTheme) => {
       if (this.stateManager.getThemePreference() === 'system') {
         document.documentElement.setAttribute('data-theme', effectiveTheme);
@@ -105,10 +110,6 @@ export class App {
     }
   }
 
-  /**
-   * Apply theme preference and update document attributes and button UI
-   * @param {'dark' | 'light' | 'system'} preference
-   */
   applyTheme(preference) {
     const effective = this.stateManager.resolveTheme(preference);
     document.documentElement.setAttribute('data-theme', effective);
@@ -117,16 +118,9 @@ export class App {
     this.updateThemeButtonUI(preference, effective);
   }
 
-  /**
-   * Cycle theme in sequence: system -> dark -> light -> system
-   */
   cycleTheme() {
     const current = this.stateManager.getThemePreference();
-    const cycle = {
-      system: 'dark',
-      dark: 'light',
-      light: 'system'
-    };
+    const cycle = { system: 'dark', dark: 'light', light: 'system' };
     const nextTheme = cycle[current] || 'dark';
     this.applyTheme(nextTheme);
 
@@ -135,11 +129,6 @@ export class App {
     this.announce(`Theme changed to ${label}`);
   }
 
-  /**
-   * Update theme toggle button UI labels and accessible descriptions
-   * @param {'dark' | 'light' | 'system'} preference
-   * @param {'dark' | 'light'} effective
-   */
   updateThemeButtonUI(preference, effective) {
     if (this.themeLabel) {
       this.themeLabel.textContent = preference;
@@ -159,7 +148,6 @@ export class App {
   bindDropZoneEvents() {
     if (!this.dropZone || !this.fileInput) return;
 
-    // Browse button triggers file input
     if (this.browseBtn) {
       this.browseBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -167,12 +155,10 @@ export class App {
       });
     }
 
-    // Dropzone click triggers file input
     this.dropZone.addEventListener('click', () => {
       this.fileInput.click();
     });
 
-    // Keyboard accessibility for dropzone
     this.dropZone.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -180,7 +166,6 @@ export class App {
       }
     });
 
-    // File input change event
     this.fileInput.addEventListener('change', (e) => {
       const files = Array.from(e.target.files || []);
       if (files.length > 0) {
@@ -189,11 +174,9 @@ export class App {
       this.fileInput.value = '';
     });
 
-    // Prevent default window drag and drop navigation
     window.addEventListener('dragover', (e) => e.preventDefault(), false);
     window.addEventListener('drop', (e) => e.preventDefault(), false);
 
-    // Drop zone drag events
     this.dropZone.addEventListener('dragenter', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -231,10 +214,6 @@ export class App {
     });
   }
 
-  /**
-   * Process multiple files selected via file input or drop zone
-   * @param {File[]} files
-   */
   handleFilesSelected(files) {
     const { added, rejected } = this.fileManager.addFiles(files);
 
@@ -248,7 +227,6 @@ export class App {
       for (const item of added) {
         const element = this.createQueueItemElement(item);
         this.fileQueueList.appendChild(element);
-        // Load image dimensions asynchronously if image
         if (item.category === 'image') {
           this.loadDimensions(item);
         }
@@ -260,10 +238,6 @@ export class App {
     }
   }
 
-  /**
-   * Asynchronously load and display natural image dimensions
-   * @param {Object} item
-   */
   async loadDimensions(item) {
     try {
       const { width, height } = await this.imageConverter.getImageDimensions(item.file);
@@ -276,14 +250,10 @@ export class App {
         dimEl.classList.remove('hidden');
       }
     } catch {
-      // Ignore if dimensions extraction fails
+      // Ignore
     }
   }
 
-  /**
-   * Display notification banner for rejected files
-   * @param {{ file: File, reason: string }[]} rejected
-   */
   showRejectionsFeedback(rejected) {
     if (!this.notificationArea) return;
 
@@ -312,9 +282,6 @@ export class App {
     this.announce(`Notice: ${reasons}`);
   }
 
-  /**
-   * Clear notifications
-   */
   clearNotifications() {
     if (this.notificationArea) {
       this.notificationArea.innerHTML = '';
@@ -325,11 +292,6 @@ export class App {
      Queue Item UI Rendering & Management
      ========================================================================== */
 
-  /**
-   * Generate category SVG icon
-   * @param {'image' | 'document' | 'audio' | 'video' | 'generic'} category
-   * @returns {string} SVG markup
-   */
   getCategoryIconMarkup(category) {
     switch (category) {
       case 'image':
@@ -370,21 +332,14 @@ export class App {
     }
   }
 
-  /**
-   * Create DOM element for a queue item card
-   * @param {Object} item
-   * @returns {HTMLLIElement}
-   */
   createQueueItemElement(item) {
     const li = document.createElement('li');
     li.className = 'queue-item';
     li.id = `queue-item-${item.id}`;
     li.setAttribute('data-id', item.id);
 
-    // Initialize default item quality (92% for lossy image formats)
     item.quality = 0.92;
 
-    // Create thumbnail preview if image
     let previewMarkup = '';
     if (item.category === 'image') {
       try {
@@ -398,7 +353,6 @@ export class App {
       previewMarkup = this.getCategoryIconMarkup(item.category);
     }
 
-    // Build format options
     const optionsHtml = item.availableOutputs.map(out => {
       const selected = out === item.outputFormat ? 'selected' : '';
       return `<option value="${out}" ${selected}>${out.toUpperCase()}</option>`;
@@ -447,13 +401,26 @@ export class App {
 
         <div class="item-actions">
           <button type="button" id="btn-convert-${item.id}" class="btn-convert-item" aria-label="Convert ${item.filename}">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <polygon points="5 3 19 12 5 21 5 3"/>
             </svg>
             Convert
           </button>
+          <button type="button" id="btn-cancel-${item.id}" class="btn-cancel-item hidden" aria-label="Cancel conversion of ${item.filename}">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+            </svg>
+            Cancel
+          </button>
+          <button type="button" id="btn-retry-${item.id}" class="btn-retry-item hidden" aria-label="Retry conversion of ${item.filename}">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+            </svg>
+            Retry
+          </button>
           <button type="button" id="btn-download-${item.id}" class="btn-download-item hidden" aria-label="Download ${item.filename}">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
               <polyline points="7 10 12 15 17 10"/>
               <line x1="12" x2="12" y1="15" y2="3"/>
@@ -461,7 +428,7 @@ export class App {
             Download
           </button>
           <button type="button" class="btn-remove-item" aria-label="Remove ${item.filename} from queue" title="Remove file">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
@@ -474,7 +441,6 @@ export class App {
       </div>
     `;
 
-    // Bind format selection change
     const select = li.querySelector('.format-select');
     const qualityCtrl = li.querySelector(`#quality-ctrl-${item.id}`);
     if (select) {
@@ -482,7 +448,6 @@ export class App {
         const nextFormat = e.target.value.toLowerCase();
         this.fileManager.setOutputFormat(item.id, nextFormat);
 
-        // Toggle quality slider visibility based on lossy format
         if (['jpg', 'jpeg', 'webp'].includes(nextFormat)) {
           qualityCtrl?.classList.remove('hidden');
         } else {
@@ -493,7 +458,6 @@ export class App {
       });
     }
 
-    // Bind quality slider change
     const qualityRange = li.querySelector(`#quality-range-${item.id}`);
     const qualityVal = li.querySelector(`#quality-val-${item.id}`);
     if (qualityRange && qualityVal) {
@@ -504,7 +468,7 @@ export class App {
       });
     }
 
-    // Bind individual convert button
+    // Convert button
     const convertBtn = li.querySelector(`#btn-convert-${item.id}`);
     if (convertBtn) {
       convertBtn.addEventListener('click', () => {
@@ -512,17 +476,34 @@ export class App {
       });
     }
 
-    // Bind individual download button
+    // Cancel button
+    const cancelBtn = li.querySelector(`#btn-cancel-${item.id}`);
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => {
+        this.converterManager.cancelItem(item.id);
+      });
+    }
+
+    // Retry button
+    const retryBtn = li.querySelector(`#btn-retry-${item.id}`);
+    if (retryBtn) {
+      retryBtn.addEventListener('click', () => {
+        this.convertSingleItem(item);
+      });
+    }
+
+    // Download button
     const downloadBtn = li.querySelector(`#btn-download-${item.id}`);
     if (downloadBtn) {
       downloadBtn.addEventListener('click', () => {
         if (item.outputBlob) {
-          this.downloadManager.downloadBlob(item.outputBlob, item.outputFilename || item.filename);
+          const downloadName = item.outputFilename || generateOutputFilename(item.filename, item.outputFormat);
+          this.downloadManager.downloadBlob(item.outputBlob, downloadName);
         }
       });
     }
 
-    // Bind remove button
+    // Remove button
     const removeBtn = li.querySelector('.btn-remove-item');
     if (removeBtn) {
       removeBtn.addEventListener('click', () => {
@@ -534,18 +515,29 @@ export class App {
   }
 
   /**
-   * Convert a single queue item
+   * Convert a single queue item with status and button synchronization
    * @param {Object} item
    */
   async convertSingleItem(item) {
     const statusBadge = document.getElementById(`status-${item.id}`);
     const progressFill = document.getElementById(`progress-${item.id}`);
     const convertBtn = document.getElementById(`btn-convert-${item.id}`);
+    const cancelBtn = document.getElementById(`btn-cancel-${item.id}`);
+    const retryBtn = document.getElementById(`btn-retry-${item.id}`);
     const downloadBtn = document.getElementById(`btn-download-${item.id}`);
 
-    if (convertBtn) {
-      convertBtn.disabled = true;
-      convertBtn.innerHTML = `Converting...`;
+    // Update UI to converting state
+    convertBtn?.classList.add('hidden');
+    retryBtn?.classList.add('hidden');
+    downloadBtn?.classList.add('hidden');
+    cancelBtn?.classList.remove('hidden');
+
+    if (statusBadge) {
+      statusBadge.className = 'status-badge status-preparing';
+      statusBadge.textContent = 'Preparing';
+    }
+    if (progressFill) {
+      progressFill.style.width = '0%';
     }
 
     try {
@@ -560,7 +552,10 @@ export class App {
         }
       });
 
-      // Update UI on success
+      // Output filename generation
+      item.outputFilename = generateOutputFilename(item.filename, item.outputFormat);
+
+      // Transition to completed
       if (statusBadge) {
         statusBadge.className = 'status-badge status-completed';
         statusBadge.textContent = 'Completed';
@@ -568,21 +563,32 @@ export class App {
       if (progressFill) {
         progressFill.style.width = '100%';
       }
-      if (convertBtn) convertBtn.classList.add('hidden');
-      if (downloadBtn) downloadBtn.classList.remove('hidden');
+      cancelBtn?.classList.add('hidden');
+      downloadBtn?.classList.remove('hidden');
 
       this.updateQueueView();
       this.announce(`Successfully converted ${item.filename} to ${item.outputFormat.toUpperCase()}`);
+      return item;
     } catch (err) {
-      if (statusBadge) {
-        statusBadge.className = 'status-badge status-failed';
-        statusBadge.textContent = 'Failed';
+      cancelBtn?.classList.add('hidden');
+      retryBtn?.classList.remove('hidden');
+
+      if (err.code === 'CANCELLED') {
+        if (statusBadge) {
+          statusBadge.className = 'status-badge status-cancelled';
+          statusBadge.textContent = 'Cancelled';
+        }
+        this.announce(`Conversion of ${item.filename} was cancelled.`);
+      } else {
+        if (statusBadge) {
+          statusBadge.className = 'status-badge status-failed';
+          statusBadge.textContent = 'Failed';
+        }
+        this.announce(`Error converting ${item.filename}: ${err.message}`);
       }
-      if (convertBtn) {
-        convertBtn.disabled = false;
-        convertBtn.innerHTML = `Retry`;
-      }
-      this.announce(`Error converting ${item.filename}: ${err.message}`);
+
+      this.updateQueueView();
+      throw err;
     }
   }
 
@@ -592,6 +598,10 @@ export class App {
    * @param {string} filename
    */
   removeQueueItem(id, filename) {
+    if (this.converterManager.isConverting(id)) {
+      this.converterManager.cancelItem(id);
+    }
+
     if (this.previewUrls.has(id)) {
       try {
         URL.revokeObjectURL(this.previewUrls.get(id));
@@ -623,12 +633,12 @@ export class App {
       this.queueCountBadge.setAttribute('aria-label', `${count} item${count === 1 ? '' : 's'} in queue`);
     }
 
-    const hasQueued = queue.some(i => i.status === 'queued');
-    const hasCompleted = queue.some(i => i.status === 'completed');
+    const hasConvertible = queue.some(i => i.status === 'queued' || i.status === 'failed' || i.status === 'cancelled');
+    const hasCompleted = queue.some(i => i.status === 'completed' && i.outputBlob);
 
-    if (this.convertAllBtn) {
-      this.convertAllBtn.disabled = !hasQueued;
-      if (hasQueued) this.convertAllBtn.removeAttribute('aria-disabled');
+    if (this.convertAllBtn && !this.isBatchProcessing) {
+      this.convertAllBtn.disabled = !hasConvertible;
+      if (hasConvertible) this.convertAllBtn.removeAttribute('aria-disabled');
       else this.convertAllBtn.setAttribute('aria-disabled', 'true');
     }
 
@@ -649,8 +659,9 @@ export class App {
       if (this.queueEmptyState) this.queueEmptyState.classList.add('hidden');
       if (this.fileQueueList) this.fileQueueList.classList.remove('hidden');
       if (this.clearAllBtn) {
-        this.clearAllBtn.disabled = false;
-        this.clearAllBtn.removeAttribute('aria-disabled');
+        this.clearAllBtn.disabled = this.isBatchProcessing;
+        if (this.isBatchProcessing) this.clearAllBtn.setAttribute('aria-disabled', 'true');
+        else this.clearAllBtn.removeAttribute('aria-disabled');
       }
     }
   }
@@ -664,7 +675,11 @@ export class App {
 
     if (this.convertAllBtn) {
       this.convertAllBtn.addEventListener('click', () => {
-        this.convertAllQueue();
+        if (this.isBatchProcessing) {
+          this.cancelBatchQueue();
+        } else {
+          this.convertAllQueue();
+        }
       });
     }
 
@@ -682,22 +697,60 @@ export class App {
   }
 
   /**
-   * Convert all queued items sequentially
+   * Cancel ongoing batch queue conversion
+   */
+  cancelBatchQueue() {
+    this.isBatchCancelled = true;
+    this.converterManager.cancelAll();
+    this.announce('Cancelled batch conversion.');
+  }
+
+  /**
+   * Convert all queued/failed/cancelled items sequentially
    */
   async convertAllQueue() {
-    const queue = this.fileManager.getQueue().filter(i => i.status === 'queued');
+    const queue = this.fileManager.getQueue().filter(
+      i => i.status === 'queued' || i.status === 'failed' || i.status === 'cancelled'
+    );
     if (queue.length === 0) return;
 
+    this.isBatchProcessing = true;
+    this.isBatchCancelled = false;
+
+    // Transform button to Cancel Batch
     if (this.convertAllBtn) {
-      this.convertAllBtn.disabled = true;
-      this.convertAllBtn.innerHTML = `Converting...`;
+      this.convertAllBtn.className = 'btn btn-danger';
+      this.convertAllBtn.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+        </svg>
+        Cancel All
+      `;
+      this.convertAllBtn.disabled = false;
+      this.convertAllBtn.removeAttribute('aria-disabled');
     }
 
+    this.updateQueueView();
+
+    let convertedCount = 0;
     for (const item of queue) {
-      await this.convertSingleItem(item);
+      if (this.isBatchCancelled) {
+        break;
+      }
+      try {
+        await this.convertSingleItem(item);
+        convertedCount++;
+      } catch {
+        // Continue sequential processing to next item unless user explicitly cancelled batch
+        if (this.isBatchCancelled) break;
+      }
     }
 
+    this.isBatchProcessing = false;
+
+    // Restore Convert All button
     if (this.convertAllBtn) {
+      this.convertAllBtn.className = 'btn btn-primary';
       this.convertAllBtn.innerHTML = `
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polygon points="5 3 19 12 5 21 5 3"/>
@@ -705,24 +758,30 @@ export class App {
         Convert All
       `;
     }
+
     this.updateQueueView();
+    this.announce(`Finished batch processing. Converted ${convertedCount} file${convertedCount === 1 ? '' : 's'}.`);
   }
 
   /**
-   * Download all completed items
+   * Download all completed items sequentially
    */
-  downloadAllCompleted() {
+  async downloadAllCompleted() {
     const completed = this.fileManager.getQueue().filter(i => i.status === 'completed' && i.outputBlob);
-    for (const item of completed) {
-      this.downloadManager.downloadBlob(item.outputBlob, item.outputFilename || item.filename);
-    }
-    this.announce(`Triggered download for ${completed.length} file${completed.length > 1 ? 's' : ''}.`);
+    if (completed.length === 0) return;
+
+    const count = await this.downloadManager.downloadAll(completed, 250);
+    this.announce(`Triggered download for ${count} file${count > 1 ? 's' : ''}.`);
   }
 
   /**
-   * Clear all items from queue and revoke all preview URLs
+   * Clear all items from queue and revoke all preview and output URLs
    */
   clearAllQueue() {
+    if (this.isBatchProcessing) {
+      this.cancelBatchQueue();
+    }
+
     for (const url of this.previewUrls.values()) {
       try {
         URL.revokeObjectURL(url);
@@ -731,6 +790,8 @@ export class App {
       }
     }
     this.previewUrls.clear();
+
+    this.downloadManager.revokeAll();
 
     const count = this.fileManager.clearQueue();
     if (this.fileQueueList) {

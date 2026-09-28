@@ -101,3 +101,20 @@ export function getDefaultOutput(ext) {
   const outputs = getAvailableOutputs(ext);
   return outputs.length > 0 ? outputs[0] : '';
 }
+
+/**
+ * Generate output filename by replacing extension with target format
+ * @param {string} originalName
+ * @param {string} targetFormat
+ * @returns {string}
+ */
+export function generateOutputFilename(originalName, targetFormat) {
+  if (!originalName) return `converted.${targetFormat || 'bin'}`;
+  const normExt = (targetFormat || '').toLowerCase() === 'jpeg' ? 'jpg' : (targetFormat || '').toLowerCase();
+  const lastDot = originalName.lastIndexOf('.');
+  if (lastDot > 0) {
+    const base = originalName.slice(0, lastDot);
+    return `${base}.${normExt}`;
+  }
+  return `${originalName}.${normExt}`;
+}

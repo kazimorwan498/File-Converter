@@ -1,13 +1,13 @@
 # Project State
 
 ## Current Phase
-Phase 4 — Image Conversion (Complete) / Phase 5 — Conversion Queue (Ready to start)
+Phase 5 — Conversion Queue (Complete) / Phase 6 — PDF / Document (Ready to start)
 
 ## Current Task
-Completed Phase 4 Image Conversion: Implemented real browser-native `ImageConverter` using Canvas, `OffscreenCanvas`, and `createImageBitmap` supporting all 8 required conversion pairs (PNG -> JPG, PNG -> WebP, JPG -> PNG, JPG -> WebP, JPEG -> PNG, JPEG -> WebP, WebP -> PNG, WebP -> JPG) with quality controls, transparency background fills, dimension extraction and resizing, real-time thumbnail previews, progress reporting, and automated test suite.
+Completed Phase 5 Conversion Queue: Connected real converter engine to file queue, sequential batch processing, live conversion status synchronization (`queued`, `preparing`, `converting`, `completed`, `cancelled`, `failed`), real-time progress bar dispatching, item-level and batch cancellation, retry failed conversion support, individual and batch sequential downloads with delay throttling, automatic output filename generation, and comprehensive object URL cleanup.
 
 ## Overall Progress
-50% (Phases 0, 1, 2, 3, and 4 completed and verified; Ready for Phase 5 Conversion Queue Batch Processing)
+60% (Phases 0 through 5 completed and verified; Ready for Phase 6 PDF & Document offline conversion)
 
 ## Completed Tasks
 - [x] Analyzed requirements from `docs/PRD.md` and structure from `docs/File-Structure.md`
@@ -16,27 +16,20 @@ Completed Phase 4 Image Conversion: Implemented real browser-native `ImageConver
 - [x] Phase 1 Application Foundation: UI shell, dark/light/system theme, dropzone, empty queue state, responsive layout
 - [x] Phase 2 File System: Multi-file ingestion, file validation (0-byte, unsupported), duplicate detection, queue UI, removal, clear
 - [x] Phase 3 Converter Architecture: `BaseConverter`, `ConverterRegistry`, `ConverterManager`, lifecycle states, progress, cancellation, `ConversionError`
-- [x] Phase 4 Image Conversion:
-  - Created `ImageConverter` in `src/converters/image/image-converter.js`:
-    - Full support for PNG, JPG, JPEG, and WebP bidirectional conversions
-    - Quality slider control (0.01 - 1.0) with live percentage readout
-    - Transparency handling (solid white background fill for formats without alpha channel like JPG/JPEG to prevent black artifacts, transparent clearRect for PNG and WebP)
-    - Image dimension extraction and optional aspect-ratio-locked resizing
-    - Real-time progress reporting (10% decode, 35% dimension calc, 55% canvas render, 75% blob encode, 100% complete)
-    - AbortSignal cancellation support with resource cleanup (`bitmap.close()`, `URL.revokeObjectURL()`)
-  - Enhanced Queue UI in `src/core/app.js`:
-    - Local object URL image thumbnail preview (`img.item-thumbnail`)
-    - Dimensions badge display (e.g. `800 × 600`)
-    - Dynamic quality slider visibility based on output format (active for JPG/WebP, hidden for lossless PNG)
-    - Individual "Convert" button per item and green "Download" button on completion
-    - Real-time progress bar filling
-    - Header "Convert All" and "Download All" operations
-  - Enhanced styling in `src/styles/main.css` for thumbnails, quality sliders, dimensions badges, and progress bars
-  - Created comprehensive test suite `tests/phase4-image-conversion.test.js` validating all 37 Phase 4 assertions
-- [x] Verified zero errors with `npm test` (157 assertions passing across Phases 1, 2, 3, and 4) and `npm run build`
+- [x] Phase 4 Image Conversion: `ImageConverter` (PNG <-> JPG/JPEG <-> WebP), quality slider, transparency handling, dimensions, preview thumbnails
+- [x] Phase 5 Conversion Queue:
+  - Connected `ConverterManager` and `ImageConverter` to interactive queue lifecycle
+  - Added sequential multi-file batch execution (`convertAllQueue`) with batch cancellation support
+  - Added live status updates and synchronized action buttons: Convert, Cancel, Retry, Download, Remove
+  - Added retry action on failed and cancelled conversions restoring item state and re-running conversion
+  - Added individual download button on completed items and batch "Download All" with 250ms interval throttling
+  - Implemented `generateOutputFilename(originalName, targetFormat)` in `src/utils/formatters.js`
+  - Enhanced `DownloadManager` in `src/core/download-manager.js` with active URL tracking and explicit `revokeUrl` / `revokeAll`
+  - Created unit test suite `tests/phase5-conversion-queue.test.js` validating all 26 Phase 5 queue assertions
+- [x] Verified zero errors with `npm test` (183 assertions passing across Phases 1, 2, 3, 4, and 5) and `npm run build`
 
 ## In Progress
-None (Phase 4 completed and verified; awaiting instruction for Phase 5)
+None (Phase 5 completed and verified; awaiting instruction for Phase 6)
 
 ## Files Created
 - `package.json`
@@ -67,14 +60,16 @@ None (Phase 4 completed and verified; awaiting instruction for Phase 5)
 - `tests/phase2-filesystem.test.js`
 - `tests/phase3-converter-engine.test.js`
 - `tests/phase4-image-conversion.test.js`
+- `tests/phase5-conversion-queue.test.js`
 - `PROJECT_STATE.md`
 - `CHANGELOG.md`
 - `TODO.md`
 - `README.md`
 
 ## Files Modified
-- `src/converters/image/image-converter.js`
 - `src/core/app.js`
+- `src/core/download-manager.js`
+- `src/utils/formatters.js`
 - `src/styles/main.css`
 - `package.json`
 - `PROJECT_STATE.md`
@@ -88,15 +83,15 @@ None (Phase 4 completed and verified; awaiting instruction for Phase 5)
 - `native-image-converter` (`Browser-Native Image Converter`):
   - Supported inputs: `png`, `jpg`, `jpeg`, `webp`
   - Supported outputs: `png`, `jpg`, `jpeg`, `webp`
-  - Conversion matrix: PNG &rarr; JPG, PNG &rarr; WebP, JPG &rarr; PNG, JPG &rarr; WebP, JPEG &rarr; PNG, JPEG &rarr; WebP, WebP &rarr; PNG, WebP &rarr; JPG
-  - Engine: Canvas API, OffscreenCanvas, createImageBitmap
+  - Fully hooked to queue processing, live progress bars, cancellation, retry, and download pipelines
 
 ## Tests Passed
 - `tests/phase1-foundation.test.js`: All 29 assertions passed (HTML elements, accessibility landmarks, CSS design tokens, StateManager theme cycling, App lifecycle)
 - `tests/phase2-filesystem.test.js`: All 48 assertions passed (format utilities, multi-file ingestion, queue item attributes, empty file rejection, duplicate rejection, unsupported format rejection, format switching, item removal, queue clearing)
 - `tests/phase3-converter-engine.test.js`: All 43 assertions passed (BaseConverter contract, registry resolution, format detection, lifecycle transitions, progress events, AbortController cancellation, cancelAll, ConversionError codes)
 - `tests/phase4-image-conversion.test.js`: All 37 assertions passed (8 conversion pairs, MIME mappings, alpha support, transparency background fill, quality control, aspect-ratio resizing, progress events, AbortSignal cancellation, dimension extraction)
-- Production build test (`npm run build`): Successfully built 14 modules in 404ms with 0 errors
+- `tests/phase5-conversion-queue.test.js`: All 26 assertions passed (one file conversion, multiple files sequential processing, mixed image formats, failed conversion handling, retry recovery, cancellation, download manager tracking, URL revocation)
+- Production build test (`npm run build`): Successfully built 14 modules in 256ms with 0 errors
 - Dev server HTTP check: `http://localhost:3000` responds HTTP 200 OK
 
 ## Tests Failed
@@ -106,8 +101,7 @@ None
 None
 
 ## Pending Tasks
-- Phase 5: Conversion Queue (Sequential queue execution, batch progress indicators, item-level cancellation controls, zip download packaging)
-- Phase 6: PDF / Document (Local browser-compatible document conversions)
+- Phase 6: PDF / Document (Local browser-compatible document conversions: PDF text extraction, markdown/text conversions)
 - Phase 7: Audio / Video (Local WASM engine integration)
 - Phase 8: Web Workers (Background thread offloading)
 - Phase 9: PWA / Offline (Manifest, Service Worker, cache-first strategy)
@@ -116,17 +110,17 @@ None
 - Phase 12: Finalization (Production build, documentation, final validation)
 
 ## Next Recommended Task
-Phase 5 — Conversion Queue: Implement sequential batch queue orchestration, cancel button during conversion, batch ZIP download option, and per-item status synchronization.
+Phase 6 — PDF / Document: Implement local browser-compatible document converter (`src/converters/pdf/document-converter.js`) supporting text extraction and document transformations without online APIs.
 
 ## Important Decisions
-- 100% local image transformations: Using native browser Canvas / OffscreenCanvas with zero cloud or CDN dependencies.
-- Alpha preservation: Alpha transparency preserved for PNG and WebP; transparent PNG converted to JPG automatically fills white background to prevent dark pixel artifacts.
-- Responsive memory cleanup: Preview URLs and image bitmaps closed immediately after decode/export or on item removal to avoid memory bloat.
+- Sequential execution: Queue processes files sequentially to protect browser memory and prevent UI thread starvation.
+- Non-blocking download throttling: Batch downloads use a 250ms staggered interval to prevent browser popup blockers from suppressing multiple downloads.
+- Explicit object URL management: Preview URLs and download Blob URLs are tracked and explicitly revoked upon removal, clearing, or download completion.
 
 ## Do Not Repeat
 - Do not add remote CDN links or remote font/script tags.
 - Do not mock or fake conversion outputs; unsupported formats must fail transparently.
-- Do not start Phase 5 automatically until instructed.
+- Do not start Phase 6 automatically until instructed.
 
 ## Last Updated
 2026-09-28

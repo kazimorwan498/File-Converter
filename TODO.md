@@ -51,23 +51,29 @@
   * [x] Add progress bars and per-item/batch conversion execution
   * [x] Register `ImageConverter` with `ConverterManager` in [src/core/app.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/app.js)
   * [x] Create test suite [tests/phase4-image-conversion.test.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/tests/phase4-image-conversion.test.js) (37 assertions passed)
+* [x] **Phase 5 — Conversion Queue**
+  * [x] Connect real converter engine to file queue in [src/core/app.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/app.js)
+  * [x] Support multiple-file sequential conversion execution with progress tracking
+  * [x] Implement status synchronization (`queued`, `preparing`, `converting`, `completed`, `cancelled`, `failed`)
+  * [x] Implement item cancellation and batch cancellation
+  * [x] Implement retry mechanism for failed and cancelled conversions
+  * [x] Implement single-file download and batch "Download All" with interval throttling in [src/core/download-manager.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/download-manager.js)
+  * [x] Implement output filename generator in [src/utils/formatters.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/utils/formatters.js)
+  * [x] Implement object URL tracking and revocation
+  * [x] Create test suite [tests/phase5-conversion-queue.test.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/tests/phase5-conversion-queue.test.js) (26 assertions passed)
 
 ---
 
 ## Current Tasks
 
-* [ ] Ready to start **Phase 5 — Conversion Queue**
-  * [ ] Implement sequential batch queue processing with pause/resume capabilities
-  * [ ] Add progress indicators, item-level cancellation, and clear queue actions
-  * [ ] Implement single-file and batch zip download capabilities
+* [ ] Ready to start **Phase 6 — PDF / Document**
+  * [ ] Evaluate and bundle local browser-compatible document libraries
+  * [ ] Implement document converter in `src/converters/pdf/document-converter.js`
+  * [ ] Support realistic document conversions without remote APIs or fake outputs
 
 ---
 
 ## Pending Tasks
-
-### Phase 6 — PDF / Document
-* [ ] Evaluate and bundle local browser-compatible document libraries
-* [ ] Support realistic document conversions without remote APIs or fake outputs
 
 ### Phase 7 — Audio / Video
 * [ ] Integrate local WebAssembly engine (local FFmpeg WASM build)
