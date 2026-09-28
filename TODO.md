@@ -31,26 +31,31 @@
   * [x] Implement single file removal and full queue clearing
   * [x] Add notification alert banner for rejected/duplicate files with dismiss action
   * [x] Create unit test suite [tests/phase2-filesystem.test.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/tests/phase2-filesystem.test.js) (48 assertions passed)
+* [x] **Phase 3 — Converter Engine**
+  * [x] Create standard `BaseConverter` interface in [src/core/base-converter.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/base-converter.js)
+  * [x] Implement `ConverterRegistry` in [src/core/converter-registry.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/converter-registry.js)
+  * [x] Implement `ConverterManager` in [src/core/converter-manager.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/converter-manager.js)
+  * [x] Implement input format detection and available output format detection
+  * [x] Implement conversion lifecycle (`queued` -> `preparing` -> `converting` -> `completed` / `cancelled` / `failed`)
+  * [x] Implement progress reporting callback interface (`0%` to `100%`)
+  * [x] Implement `AbortController`-based cancellation (`cancel(id)`, `cancelItem(id)`, `cancelAll()`)
+  * [x] Implement standardized `ConversionError` in [src/core/conversion-error.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/conversion-error.js)
+  * [x] Create architecture test suite in [tests/phase3-converter-engine.test.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/tests/phase3-converter-engine.test.js) (43 assertions passed)
 
 ---
 
 ## Current Tasks
 
-* [ ] Ready to start **Phase 3 — Converter Engine**
-  * [ ] Build converter registry and lifecycle manager in [src/core/converter-manager.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/converter-manager.js)
-  * [ ] Define standard converter interface (`id`, `name`, `inputTypes`, `outputTypes`, `canConvert`, `convert`, `estimate`, `cancel`)
-  * [ ] Connect format resolution between `FileManager` and registered converters
-  * [ ] Prepare output blob and download management in [src/core/download-manager.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/download-manager.js)
+* [ ] Ready to start **Phase 4 — Image Conversion**
+  * [ ] Implement native Canvas/OffscreenCanvas image conversions in `src/converters/image/image-converter.js`
+  * [ ] Support PNG <-> JPG/JPEG <-> WebP bidirectional conversions
+  * [ ] Support quality settings, resize controls, and aspect ratio locking
+  * [ ] Preserve PNG alpha transparency
+  * [ ] Register image converter into `ConverterManager`
 
 ---
 
 ## Pending Tasks
-
-### Phase 4 — Image Conversion
-* [ ] Implement native Canvas/OffscreenCanvas image conversions (`src/converters/image/`)
-* [ ] Support PNG <-> JPG/JPEG <-> WebP bidirectional conversions
-* [ ] Support quality settings, resize controls, and aspect ratio locking
-* [ ] Preserve PNG alpha transparency
 
 ### Phase 5 — Conversion Queue
 * [ ] Implement sequential batch queue processing

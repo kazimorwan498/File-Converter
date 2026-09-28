@@ -5,11 +5,13 @@
  */
 import { StateManager } from './state-manager.js';
 import { FileManager } from './file-manager.js';
+import { ConverterManager } from './converter-manager.js';
 
 export class App {
   constructor() {
     this.stateManager = new StateManager();
     this.fileManager = new FileManager();
+    this.converterManager = new ConverterManager();
 
     // DOM references
     this.themeToggleBtn = null;
