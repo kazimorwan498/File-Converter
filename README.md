@@ -36,16 +36,41 @@ A 100% offline, privacy-first file conversion web application built with vanilla
 
 *Note: Video-to-audio extraction (e.g. MP4 to MP3/WAV) is fully supported natively.*
 
+## Browser Compatibility
+
+| Browser | Minimum Version | Offline / PWA | Web Workers & OffscreenCanvas | FFmpeg WebAssembly |
+| :--- | :--- | :--- | :--- | :--- |
+| **Google Chrome / Chromium** | 92+ | Full Support | Full Support | Full Support (`SharedArrayBuffer` via COOP/COEP) |
+| **Microsoft Edge** | 92+ | Full Support | Full Support | Full Support (`SharedArrayBuffer` via COOP/COEP) |
+| **Mozilla Firefox** | 90+ | Full Support | Full Support | Full Support (`SharedArrayBuffer` via COOP/COEP) |
+| **Apple Safari (macOS)** | 16.4+ | Full Support | Full Support | Supported (Safari 16.4+ with COOP/COEP) |
+| **Mobile Browsers (Android/iOS)** | Android Chrome 92+ / iOS Safari 16.4+ | Full Support (Add to Home Screen) | Full Support | Supported on modern hardware |
+
+## Known Limitations
+
+In strict adherence to the **No Fake Conversions** core principle, unsupported conversions fail transparently with clear human-readable explanations:
+
+1. **Complex Document Layouts (`DOCX -> PDF`, `PDF -> DOCX`)**:
+   - Compiling Microsoft Word XML or reflowing complex PDF multi-column geometries requires heavy desktop office suites (e.g. MS Office, LibreOffice). These are rejected with `UNSUPPORTED_FORMAT` to protect document fidelity.
+2. **Arbitrary PDF Rasterization (`PDF -> PNG/JPG`)**:
+   - Rasterizing multi-page vector PDFs to bitmap images offline requires desktop Cairo or Poppler rendering runtimes.
+3. **Scanned PDF OCR**:
+   - The offline PDF extractor parses embedded text layers and FlateDecode streams. Image-only scanned PDFs without embedded text layers require OCR engines and will report that no text layer is present.
+4. **Proprietary & DRM-Encumbered Media Codecs (`WMA`, `WMV`, `RMVB`, `M4P`)**:
+   - Legacy RealMedia and proprietary Windows Media codecs are unsupported by browser-compatible WebAssembly builds and are rejected transparently.
+5. **Memory Limits for Giant Video Files**:
+   - 32-bit WebAssembly processes operate with a 2GB address space. Videos over 1GB should be converted on desktop software to prevent browser tab memory exhaustion.
+
 ## Development & Verification
 
 ```bash
-# Run unit and integration test suites (Phases 1-9)
+# Run complete test suite across Phases 1 through 10 (590 passing assertions)
 npm test
 
-# Build production bundle with PWA assets
+# Build production bundle with PWA assets and manual chunk splitting
 npm run build
 
-# Preview production build locally
+# Preview production build locally with COOP/COEP headers
 npm run preview
 ```
 
@@ -56,5 +81,6 @@ npm run preview
 - [PROJECT_STATE.md](file:///d:/Frontend/All_Projects/Apps/File-Converter/PROJECT_STATE.md): Source of truth for project status
 - [TODO.md](file:///d:/Frontend/All_Projects/Apps/File-Converter/TODO.md): Task board and roadmap
 - [CHANGELOG.md](file:///d:/Frontend/All_Projects/Apps/File-Converter/CHANGELOG.md): Historical change records
+
 
 

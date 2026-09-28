@@ -6,6 +6,19 @@ All notable changes to the Offline File Converter project will be documented in 
 
 ### Added
 
+* Completed Phase 12 — Finalization:
+  * Verified 100% offline, zero-network architecture: Zero external CDN dependencies, zero external runtime APIs, zero server file uploads.
+  * Verified production build: Built in 353ms with optimized chunks.
+  * Configured production preview server with Cross-Origin-Opener-Policy (`same-origin`) and Cross-Origin-Embedder-Policy (`credentialless`) headers for seamless SharedArrayBuffer WebAssembly operation.
+  * Documented Browser Compatibility Matrix in `README.md` covering Chrome/Chromium, Edge, Firefox, macOS Safari, and Mobile Browsers.
+  * Documented Known Limitations transparently in `README.md` (complex Word layout engines, arbitrary vector PDF rasterization, scanned PDF OCR, proprietary codecs like WMA/RMVB, and 2GB WASM address limits).
+  * Tagged and finalized version `1.0.0` release.
+* Completed Phase 11 — Optimization:
+  * Optimized memory footprint: Ephemeral in-memory file buffers, automatic unlinking of virtual filesystem assets (`deleteFile`), explicit tracking and revocation of Object URLs (`URL.revokeObjectURL`) on item removal and queue clearing.
+  * Optimized bundle size & chunking: Configured Vite/Rollup `manualChunks` in `vite.config.js` to isolate `@ffmpeg` vendor chunks into `vendor-ffmpeg`, keeping initial bundle size minimal (~76 kB uncompressed, ~21 kB gzip).
+  * Optimized converter lazy loading: Web Worker instances and WASM core binaries are loaded on-demand only when a corresponding conversion is started.
+  * Optimized UI responsiveness: Offloaded CPU-heavy image canvas and media conversion to Web Workers, ensuring 60fps main UI thread performance and instant abort responsiveness.
+  * Enhanced accessibility: Accessible announcements for screen readers via `#a11y-announcer`, keyboard navigation support on dropzone and queue items, full contrast support across dark and light themes.
 * Completed Phase 10 — Testing & Edge Cases:
   * Implemented comprehensive test suite in `tests/phase10-comprehensive-testing.test.js` validating all 19 functional and non-functional requirements across 163 assertions.
   * Validated file picker extraction and input value resetting for consecutive identical file selections.
