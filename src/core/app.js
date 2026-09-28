@@ -1,17 +1,27 @@
 /**
  * Core Application Controller
  * Handles application lifecycle, theme system, dropzone event wiring,
- * multi-file ingestion, validation, duplicate notifications, and queue item management.
+ * multi-file ingestion, image previews, quality controls, and conversion execution.
  */
 import { StateManager } from './state-manager.js';
 import { FileManager } from './file-manager.js';
 import { ConverterManager } from './converter-manager.js';
+import { DownloadManager } from './download-manager.js';
+import { ImageConverter } from '../converters/image/image-converter.js';
 
 export class App {
   constructor() {
     this.stateManager = new StateManager();
     this.fileManager = new FileManager();
     this.converterManager = new ConverterManager();
+    this.downloadManager = new DownloadManager();
+
+    // Register native ImageConverter
+    this.imageConverter = new ImageConverter();
+    this.converterManager.registerConverter(this.imageConverter);
+
+    // Track active object URLs for previews to prevent memory leaks
+    this.previewUrls = new Map();
 
     // DOM references
     this.themeToggleBtn = null;
@@ -41,7 +51,7 @@ export class App {
     this.initThemeSystem();
     this.bindDropZoneEvents();
     this.bindQueueEvents();
-    console.info('Offline File Converter — Phase 2 File System & Queue ready.');
+    console.info('Offline File Converter — Phase 4 Native Image Conversion ready.');
   }
 
   /**
@@ -176,7 +186,6 @@ export class App {
       if (files.length > 0) {
         this.handleFilesSelected(files);
       }
-      // Reset input value so identical filename re-additions can fire change
       this.fileInput.value = '';
     });
 
@@ -229,23 +238,45 @@ export class App {
   handleFilesSelected(files) {
     const { added, rejected } = this.fileManager.addFiles(files);
 
-    // Show warnings/errors for rejected files (duplicates, empty, unsupported)
     if (rejected.length > 0) {
       this.showRejectionsFeedback(rejected);
     } else {
       this.clearNotifications();
     }
 
-    // Render added files
     if (added.length > 0) {
       for (const item of added) {
         const element = this.createQueueItemElement(item);
         this.fileQueueList.appendChild(element);
+        // Load image dimensions asynchronously if image
+        if (item.category === 'image') {
+          this.loadDimensions(item);
+        }
       }
 
       this.updateQueueView();
       const message = `Added ${added.length} file${added.length > 1 ? 's' : ''} to queue. Total: ${this.fileManager.count}.`;
       this.announce(message);
+    }
+  }
+
+  /**
+   * Asynchronously load and display natural image dimensions
+   * @param {Object} item
+   */
+  async loadDimensions(item) {
+    try {
+      const { width, height } = await this.imageConverter.getImageDimensions(item.file);
+      item.width = width;
+      item.height = height;
+
+      const dimEl = document.getElementById(`dimensions-${item.id}`);
+      if (dimEl) {
+        dimEl.textContent = `${width} × ${height}`;
+        dimEl.classList.remove('hidden');
+      }
+    } catch {
+      // Ignore if dimensions extraction fails
     }
   }
 
@@ -350,53 +381,144 @@ export class App {
     li.id = `queue-item-${item.id}`;
     li.setAttribute('data-id', item.id);
 
+    // Initialize default item quality (92% for lossy image formats)
+    item.quality = 0.92;
+
+    // Create thumbnail preview if image
+    let previewMarkup = '';
+    if (item.category === 'image') {
+      try {
+        const previewUrl = URL.createObjectURL(item.file);
+        this.previewUrls.set(item.id, previewUrl);
+        previewMarkup = `<img src="${previewUrl}" class="item-thumbnail" alt="${item.filename} thumbnail" />`;
+      } catch {
+        previewMarkup = this.getCategoryIconMarkup(item.category);
+      }
+    } else {
+      previewMarkup = this.getCategoryIconMarkup(item.category);
+    }
+
     // Build format options
     const optionsHtml = item.availableOutputs.map(out => {
       const selected = out === item.outputFormat ? 'selected' : '';
       return `<option value="${out}" ${selected}>${out.toUpperCase()}</option>`;
     }).join('');
 
+    const isLossyImage = ['jpg', 'jpeg', 'webp'].includes(item.outputFormat);
+
     li.innerHTML = `
-      <div class="item-category-icon category-${item.category}" aria-hidden="true">
-        ${this.getCategoryIconMarkup(item.category)}
-      </div>
-
-      <div class="item-info">
-        <div class="item-filename" title="${item.filename}">
-          ${item.filename}
+      <div class="queue-item-main">
+        <div class="item-preview-wrapper category-${item.category}">
+          ${previewMarkup}
         </div>
-        <div class="item-meta">
-          <span class="item-size">${item.formattedSize}</span>
-          <span class="item-format-tag" title="MIME: ${item.mimeType}">${item.extension.toUpperCase()}</span>
+
+        <div class="item-info">
+          <div class="item-filename" title="${item.filename}">
+            ${item.filename}
+          </div>
+          <div class="item-meta">
+            <span class="item-size">${item.formattedSize}</span>
+            <span id="dimensions-${item.id}" class="item-dimensions hidden"></span>
+            <span class="item-format-tag" title="MIME: ${item.mimeType}">${item.extension.toUpperCase()}</span>
+          </div>
+        </div>
+
+        <div class="item-controls">
+          <div class="item-converter-control">
+            <span class="target-arrow" aria-hidden="true">&rarr;</span>
+            <label class="sr-only" for="format-select-${item.id}">Target format for ${item.filename}</label>
+            <select id="format-select-${item.id}" class="format-select" aria-label="Convert ${item.filename} to">
+              ${optionsHtml}
+            </select>
+          </div>
+
+          <div id="quality-ctrl-${item.id}" class="quality-control ${isLossyImage ? '' : 'hidden'}">
+            <label for="quality-range-${item.id}">Quality:</label>
+            <input type="range" id="quality-range-${item.id}" class="quality-slider" min="10" max="100" value="92" step="1" />
+            <span id="quality-val-${item.id}" class="quality-value">92%</span>
+          </div>
+        </div>
+
+        <div class="item-status">
+          <span id="status-${item.id}" class="status-badge status-${item.status}">
+            ${item.status}
+          </span>
+        </div>
+
+        <div class="item-actions">
+          <button type="button" id="btn-convert-${item.id}" class="btn-convert-item" aria-label="Convert ${item.filename}">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            Convert
+          </button>
+          <button type="button" id="btn-download-${item.id}" class="btn-download-item hidden" aria-label="Download ${item.filename}">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" x2="12" y1="15" y2="3"/>
+            </svg>
+            Download
+          </button>
+          <button type="button" class="btn-remove-item" aria-label="Remove ${item.filename} from queue" title="Remove file">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
       </div>
 
-      <div class="item-converter-control">
-        <span class="target-arrow" aria-hidden="true">&rarr;</span>
-        <label class="sr-only" for="format-select-${item.id}">Target format for ${item.filename}</label>
-        <select id="format-select-${item.id}" class="format-select" aria-label="Convert ${item.filename} to">
-          ${optionsHtml}
-        </select>
+      <div class="item-progress-container" aria-hidden="true">
+        <div id="progress-${item.id}" class="item-progress-fill"></div>
       </div>
-
-      <div class="item-status">
-        <span id="status-${item.id}" class="status-badge status-${item.status}">${item.status}</span>
-      </div>
-
-      <button type="button" class="btn-remove-item" aria-label="Remove ${item.filename} from queue" title="Remove file">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
     `;
 
     // Bind format selection change
     const select = li.querySelector('.format-select');
+    const qualityCtrl = li.querySelector(`#quality-ctrl-${item.id}`);
     if (select) {
       select.addEventListener('change', (e) => {
-        this.fileManager.setOutputFormat(item.id, e.target.value);
-        this.announce(`Target format for ${item.filename} set to ${e.target.value.toUpperCase()}`);
+        const nextFormat = e.target.value.toLowerCase();
+        this.fileManager.setOutputFormat(item.id, nextFormat);
+
+        // Toggle quality slider visibility based on lossy format
+        if (['jpg', 'jpeg', 'webp'].includes(nextFormat)) {
+          qualityCtrl?.classList.remove('hidden');
+        } else {
+          qualityCtrl?.classList.add('hidden');
+        }
+
+        this.announce(`Target format for ${item.filename} set to ${nextFormat.toUpperCase()}`);
+      });
+    }
+
+    // Bind quality slider change
+    const qualityRange = li.querySelector(`#quality-range-${item.id}`);
+    const qualityVal = li.querySelector(`#quality-val-${item.id}`);
+    if (qualityRange && qualityVal) {
+      qualityRange.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        item.quality = val / 100;
+        qualityVal.textContent = `${val}%`;
+      });
+    }
+
+    // Bind individual convert button
+    const convertBtn = li.querySelector(`#btn-convert-${item.id}`);
+    if (convertBtn) {
+      convertBtn.addEventListener('click', () => {
+        this.convertSingleItem(item);
+      });
+    }
+
+    // Bind individual download button
+    const downloadBtn = li.querySelector(`#btn-download-${item.id}`);
+    if (downloadBtn) {
+      downloadBtn.addEventListener('click', () => {
+        if (item.outputBlob) {
+          this.downloadManager.downloadBlob(item.outputBlob, item.outputFilename || item.filename);
+        }
       });
     }
 
@@ -412,11 +534,73 @@ export class App {
   }
 
   /**
-   * Remove an item from the queue and DOM
+   * Convert a single queue item
+   * @param {Object} item
+   */
+  async convertSingleItem(item) {
+    const statusBadge = document.getElementById(`status-${item.id}`);
+    const progressFill = document.getElementById(`progress-${item.id}`);
+    const convertBtn = document.getElementById(`btn-convert-${item.id}`);
+    const downloadBtn = document.getElementById(`btn-download-${item.id}`);
+
+    if (convertBtn) {
+      convertBtn.disabled = true;
+      convertBtn.innerHTML = `Converting...`;
+    }
+
+    try {
+      await this.converterManager.convertItem(item, {
+        quality: item.quality !== undefined ? item.quality : 0.92,
+        onProgress: (pct, stage) => {
+          if (progressFill) progressFill.style.width = `${pct}%`;
+          if (statusBadge) {
+            statusBadge.className = 'status-badge status-converting';
+            statusBadge.textContent = `${pct}%`;
+          }
+        }
+      });
+
+      // Update UI on success
+      if (statusBadge) {
+        statusBadge.className = 'status-badge status-completed';
+        statusBadge.textContent = 'Completed';
+      }
+      if (progressFill) {
+        progressFill.style.width = '100%';
+      }
+      if (convertBtn) convertBtn.classList.add('hidden');
+      if (downloadBtn) downloadBtn.classList.remove('hidden');
+
+      this.updateQueueView();
+      this.announce(`Successfully converted ${item.filename} to ${item.outputFormat.toUpperCase()}`);
+    } catch (err) {
+      if (statusBadge) {
+        statusBadge.className = 'status-badge status-failed';
+        statusBadge.textContent = 'Failed';
+      }
+      if (convertBtn) {
+        convertBtn.disabled = false;
+        convertBtn.innerHTML = `Retry`;
+      }
+      this.announce(`Error converting ${item.filename}: ${err.message}`);
+    }
+  }
+
+  /**
+   * Remove an item from the queue, revoke object URLs, and cleanup DOM
    * @param {string} id
    * @param {string} filename
    */
   removeQueueItem(id, filename) {
+    if (this.previewUrls.has(id)) {
+      try {
+        URL.revokeObjectURL(this.previewUrls.get(id));
+      } catch {
+        // Ignore
+      }
+      this.previewUrls.delete(id);
+    }
+
     this.fileManager.removeFile(id);
     const element = document.getElementById(`queue-item-${id}`);
     if (element) {
@@ -431,11 +615,27 @@ export class App {
    * Update queue header counters, empty state visibility, and action button states
    */
   updateQueueView() {
-    const count = this.fileManager.count;
+    const queue = this.fileManager.getQueue();
+    const count = queue.length;
 
     if (this.queueCountBadge) {
       this.queueCountBadge.textContent = count.toString();
       this.queueCountBadge.setAttribute('aria-label', `${count} item${count === 1 ? '' : 's'} in queue`);
+    }
+
+    const hasQueued = queue.some(i => i.status === 'queued');
+    const hasCompleted = queue.some(i => i.status === 'completed');
+
+    if (this.convertAllBtn) {
+      this.convertAllBtn.disabled = !hasQueued;
+      if (hasQueued) this.convertAllBtn.removeAttribute('aria-disabled');
+      else this.convertAllBtn.setAttribute('aria-disabled', 'true');
+    }
+
+    if (this.downloadAllBtn) {
+      this.downloadAllBtn.disabled = !hasCompleted;
+      if (hasCompleted) this.downloadAllBtn.removeAttribute('aria-disabled');
+      else this.downloadAllBtn.setAttribute('aria-disabled', 'true');
     }
 
     if (count === 0) {
@@ -456,11 +656,23 @@ export class App {
   }
 
   /* ==========================================================================
-     Queue Action Handlers
+     Queue Action Handlers (Convert All, Download All, Clear)
      ========================================================================== */
 
   bindQueueEvents() {
     this.updateQueueView();
+
+    if (this.convertAllBtn) {
+      this.convertAllBtn.addEventListener('click', () => {
+        this.convertAllQueue();
+      });
+    }
+
+    if (this.downloadAllBtn) {
+      this.downloadAllBtn.addEventListener('click', () => {
+        this.downloadAllCompleted();
+      });
+    }
 
     if (this.clearAllBtn) {
       this.clearAllBtn.addEventListener('click', () => {
@@ -470,9 +682,56 @@ export class App {
   }
 
   /**
-   * Clear all items from queue
+   * Convert all queued items sequentially
+   */
+  async convertAllQueue() {
+    const queue = this.fileManager.getQueue().filter(i => i.status === 'queued');
+    if (queue.length === 0) return;
+
+    if (this.convertAllBtn) {
+      this.convertAllBtn.disabled = true;
+      this.convertAllBtn.innerHTML = `Converting...`;
+    }
+
+    for (const item of queue) {
+      await this.convertSingleItem(item);
+    }
+
+    if (this.convertAllBtn) {
+      this.convertAllBtn.innerHTML = `
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        Convert All
+      `;
+    }
+    this.updateQueueView();
+  }
+
+  /**
+   * Download all completed items
+   */
+  downloadAllCompleted() {
+    const completed = this.fileManager.getQueue().filter(i => i.status === 'completed' && i.outputBlob);
+    for (const item of completed) {
+      this.downloadManager.downloadBlob(item.outputBlob, item.outputFilename || item.filename);
+    }
+    this.announce(`Triggered download for ${completed.length} file${completed.length > 1 ? 's' : ''}.`);
+  }
+
+  /**
+   * Clear all items from queue and revoke all preview URLs
    */
   clearAllQueue() {
+    for (const url of this.previewUrls.values()) {
+      try {
+        URL.revokeObjectURL(url);
+      } catch {
+        // Ignore
+      }
+    }
+    this.previewUrls.clear();
+
     const count = this.fileManager.clearQueue();
     if (this.fileQueueList) {
       this.fileQueueList.innerHTML = '';

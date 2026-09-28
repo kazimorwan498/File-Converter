@@ -41,26 +41,29 @@
   * [x] Implement `AbortController`-based cancellation (`cancel(id)`, `cancelItem(id)`, `cancelAll()`)
   * [x] Implement standardized `ConversionError` in [src/core/conversion-error.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/conversion-error.js)
   * [x] Create architecture test suite in [tests/phase3-converter-engine.test.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/tests/phase3-converter-engine.test.js) (43 assertions passed)
+* [x] **Phase 4 — Image Conversion**
+  * [x] Implement browser-native `ImageConverter` in [src/converters/image/image-converter.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/converters/image/image-converter.js)
+  * [x] Support PNG <-> JPG/JPEG <-> WebP bidirectional conversions
+  * [x] Support quality slider controls for lossy formats (JPG, WebP)
+  * [x] Handle transparency with white background fill for JPG/JPEG and preserve alpha for PNG/WebP
+  * [x] Extract image dimensions and support aspect-ratio-locked resizing
+  * [x] Provide thumbnail previews with local object URLs
+  * [x] Add progress bars and per-item/batch conversion execution
+  * [x] Register `ImageConverter` with `ConverterManager` in [src/core/app.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/app.js)
+  * [x] Create test suite [tests/phase4-image-conversion.test.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/tests/phase4-image-conversion.test.js) (37 assertions passed)
 
 ---
 
 ## Current Tasks
 
-* [ ] Ready to start **Phase 4 — Image Conversion**
-  * [ ] Implement native Canvas/OffscreenCanvas image conversions in `src/converters/image/image-converter.js`
-  * [ ] Support PNG <-> JPG/JPEG <-> WebP bidirectional conversions
-  * [ ] Support quality settings, resize controls, and aspect ratio locking
-  * [ ] Preserve PNG alpha transparency
-  * [ ] Register image converter into `ConverterManager`
+* [ ] Ready to start **Phase 5 — Conversion Queue**
+  * [ ] Implement sequential batch queue processing with pause/resume capabilities
+  * [ ] Add progress indicators, item-level cancellation, and clear queue actions
+  * [ ] Implement single-file and batch zip download capabilities
 
 ---
 
 ## Pending Tasks
-
-### Phase 5 — Conversion Queue
-* [ ] Implement sequential batch queue processing
-* [ ] Add progress indicators, item-level cancellation, and clear queue actions
-* [ ] Implement single-file and batch zip download capabilities
 
 ### Phase 6 — PDF / Document
 * [ ] Evaluate and bundle local browser-compatible document libraries
