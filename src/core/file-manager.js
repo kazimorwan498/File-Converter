@@ -69,7 +69,13 @@ export class FileManager {
    * @returns {{ valid: boolean, reason?: string }}
    */
   validateFile(file) {
-    if (!file || !(file instanceof File)) {
+    const isFile = Boolean(
+      file &&
+      typeof file === 'object' &&
+      typeof file.name === 'string' &&
+      typeof file.size === 'number'
+    );
+    if (!isFile) {
       return { valid: false, reason: 'Invalid file object' };
     }
 
@@ -87,7 +93,7 @@ export class FileManager {
     }
 
     if (this.isDuplicate(file)) {
-      return { valid: false, reason: `"${file.name}" is already in the queue.` };
+      return { valid: false, reason: `Duplicate file: "${file.name}" is already in the queue.` };
     }
 
     return { valid: true };

@@ -93,20 +93,36 @@ export class PwaManager {
     }
 
     window.addEventListener('beforeinstallprompt', (e) => {
-      // Prevent the mini-infobar from appearing on mobile
-      e.preventDefault();
-      this.deferredPrompt = e;
-      this.isInstallable = true;
-      this.onInstallableChange(true);
+      this.handleBeforeInstallPrompt(e);
     });
 
     window.addEventListener('appinstalled', () => {
-      this.deferredPrompt = null;
-      this.isInstallable = false;
-      this.onInstallableChange(false);
-      this.onInstalled();
-      console.info('PWA: Application was installed successfully.');
+      this.handleAppInstalled();
     });
+  }
+
+  /**
+   * Handle beforeinstallprompt event
+   * @param {Event} e
+   */
+  handleBeforeInstallPrompt(e) {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
+    this.deferredPrompt = e;
+    this.isInstallable = true;
+    this.onInstallableChange(true);
+  }
+
+  /**
+   * Handle appinstalled event
+   */
+  handleAppInstalled() {
+    this.deferredPrompt = null;
+    this.isInstallable = false;
+    this.onInstallableChange(false);
+    this.onInstalled();
+    console.info('PWA: Application was installed successfully.');
   }
 
   /**

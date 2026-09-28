@@ -3,6 +3,8 @@
  * Handles local Blob URL generation, triggering browser downloads (single & batch),
  * and revoking object URLs to prevent memory leaks.
  */
+import { generateOutputFilename } from '../utils/formatters.js';
+
 export class DownloadManager {
   constructor() {
     this.activeUrls = new Set();
@@ -49,7 +51,7 @@ export class DownloadManager {
 
   /**
    * Download multiple files sequentially with slight delay to prevent browser download throttling
-   * @param {{ blob?: Blob, outputBlob?: Blob, filename?: string, outputFilename?: string }[]} items
+   * @param {{ blob?: Blob, outputBlob?: Blob, filename?: string, outputFilename?: string, outputFormat?: string }[]} items
    * @param {number} [delayMs=250]
    * @returns {Promise<number>} Number of downloaded files
    */
@@ -57,7 +59,9 @@ export class DownloadManager {
     let count = 0;
     for (const item of items) {
       const blob = item.outputBlob || item.blob;
-      const name = item.outputFilename || item.filename || 'converted';
+      const name = item.outputFilename ||
+        (item.outputFormat && item.filename ? generateOutputFilename(item.filename, item.outputFormat) : item.filename) ||
+        'converted';
       if (blob) {
         this.downloadBlob(blob, name);
         count++;

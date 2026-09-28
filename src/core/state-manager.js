@@ -4,10 +4,12 @@
  * User files are strictly kept in ephemeral memory and never stored in localStorage.
  */
 export class StateManager {
-  constructor() {
+  constructor(options = {}) {
     this.THEME_KEY = 'offline_converter_theme_preference';
     this.VALID_THEMES = ['dark', 'light', 'system'];
-    this.systemMediaMatcher = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+    this.storage = options.storage || (typeof localStorage !== 'undefined' ? localStorage : null);
+    this.systemMediaMatcher = options.mediaMatcher ||
+      (typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null);
   }
 
   /**
@@ -17,9 +19,11 @@ export class StateManager {
    */
   getThemePreference() {
     try {
-      const saved = localStorage.getItem(this.THEME_KEY);
-      if (saved && this.VALID_THEMES.includes(saved)) {
-        return saved;
+      if (this.storage) {
+        const saved = this.storage.getItem(this.THEME_KEY);
+        if (saved && this.VALID_THEMES.includes(saved)) {
+          return saved;
+        }
       }
     } catch {
       // In private browsing or restricted environments, fallback safely
@@ -34,7 +38,9 @@ export class StateManager {
   setThemePreference(theme) {
     if (!this.VALID_THEMES.includes(theme)) return;
     try {
-      localStorage.setItem(this.THEME_KEY, theme);
+      if (this.storage) {
+        this.storage.setItem(this.THEME_KEY, theme);
+      }
     } catch {
       // Ignore localStorage write errors
     }

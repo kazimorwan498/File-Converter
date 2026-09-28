@@ -2,6 +2,52 @@
 
 All notable changes to the Offline File Converter project will be documented in this file.
 
+## 2026-09-29
+
+### Added
+
+* Completed Phase 10 — Testing & Edge Cases:
+  * Implemented comprehensive test suite in `tests/phase10-comprehensive-testing.test.js` validating all 19 functional and non-functional requirements across 163 assertions.
+  * Validated file picker extraction and input value resetting for consecutive identical file selections.
+  * Validated drag & drop lifecycle (dragenter, nested counters, dragleave, drop dataTransfer extraction).
+  * Validated multi-file ingestion across image, document, audio, video models.
+  * Validated duplicate prevention (name, size, timestamp) and user notification banners.
+  * Validated all 8 bidirectional image conversion pairs, quality sliders, transparency background fill, and aspect-ratio dimensions.
+  * Validated document conversion engine (txt, md, html, json, pdf) and markdown compiler.
+  * Validated audio & video conversion engine (mp3, wav, ogg, aac, flac, mp4, webm) and fast audio extraction (-vn).
+  * Validated honest offline limitations for unsupported codecs and formats (docx, wma, rmvb, scanned PDFs).
+  * Validated corrupted file handling: 0-byte files, corrupted image decoding, corrupted PDF stream recovery.
+  * Validated item-level cancellation, in-flight conversion abortion, and batch cancellation.
+  * Validated retry mechanism restoring item state from failed and cancelled statuses.
+  * Validated single item download and batch download with interval throttling.
+  * Validated dark/light/system theme cycling and localStorage persistence.
+  * Validated mobile layout breakpoints and touch-friendly controls.
+  * Validated Service Worker cache-first fetch strategy and offline SPA navigation fallback.
+  * Validated PWA beforeinstallprompt interception, programmatic installation, and standalone mode.
+  * Validated production build bundle integrity (HTML, CSS, JS chunks, manifest, icons, WASM binaries).
+
+### Changed
+
+* Updated `src/core/file-manager.js`: Enhanced `validateFile` to accept duck-typed File objects checking `{ name, size }` and clarified duplicate rejection message.
+* Updated `src/core/download-manager.js`: Added dynamic fallback to `generateOutputFilename` in `downloadAll` when `item.outputFilename` is not pre-populated.
+* Updated `src/core/state-manager.js`: Added dependency injection constructor options `{ storage, mediaMatcher }` and existence checks for `window` and `localStorage`.
+* Updated `src/core/pwa-manager.js`: Exposed `handleBeforeInstallPrompt` and `handleAppInstalled` methods for direct programmatic and headless testing.
+* Updated `package.json`: Bumped version to `0.10.0` and included Phase 10 test suite in `npm test`.
+* Updated `PROJECT_STATE.md`, `TODO.md`, and `README.md` to reflect Phase 10 completion.
+
+### Fixed
+
+* Fixed cross-realm `File` rejection in `FileManager` where `instanceof File` failed for iframes, worker transfers, or mock environments.
+* Fixed unshielded `cleanup()` calls in `ImageConverter.getImageDimensions` and `convertOnMainThread` by adding `typeof cleanup === 'function'` guards.
+* Fixed `ReferenceError: window is not defined` in `StateManager` when instantiated in headless or Node.js test environments.
+* Fixed output filename generation in batch download when `item.outputFilename` was not pre-populated.
+* Clarified duplicate rejection notification message with "Duplicate file:" prefix.
+
+### Tested
+
+* Executed `npm test`: 590 assertions passed across Phase 1 through 10 test suites with 0 failures.
+* Executed `npm run build`: Production bundle transformed 33 modules in 346ms with 0 errors.
+
 ## 2026-09-28
 
 ### Added

@@ -329,7 +329,9 @@ export class ImageConverter extends BaseConverter {
         originalHeight: origHeight
       };
     } finally {
-      cleanup();
+      if (typeof cleanup === 'function') {
+        cleanup();
+      }
     }
   }
 
@@ -340,7 +342,9 @@ export class ImageConverter extends BaseConverter {
    */
   async getImageDimensions(file) {
     const { width, height, cleanup } = await this.decodeImage(file);
-    cleanup();
+    if (typeof cleanup === 'function') {
+      cleanup();
+    }
     return { width, height };
   }
 
