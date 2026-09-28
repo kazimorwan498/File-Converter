@@ -7,19 +7,30 @@ A 100% offline, privacy-first file conversion web application built with vanilla
 - **100% Client-Side Processing**: No files ever leave the user's browser.
 - **Zero Remote Dependencies**: No CDNs, no remote fonts, no external APIs, no tracking.
 - **True Offline Capability**: Fully functional without network connectivity once installed/loaded.
-- **No Fake Conversions**: Transparent support matrices with honest error handling.
+- **No Fake Conversions**: Transparent support matrices with honest error handling and UI limitation explanations.
 
 ## Architecture
 
-- **UI & Layout**: Semantic HTML5 and Vanilla CSS design system with light/dark theme support.
-- **Build System**: Vite with local ES Modules.
-- **Core Engine**: Converter Registry pattern with standard lifecycle interface (`canConvert`, `convert`, `cancel`, `estimate`).
+- **UI & Layout**: Semantic HTML5 and Vanilla CSS design system with light/dark/system theme support.
+- **Build System**: Vite with local ES Modules and local static assets.
+- **Core Engine**: Converter Registry pattern with standard lifecycle interface (`canConvert`, `convert`, `cancel`, `getConversionLimitation`).
 - **Conversion Pipelines**:
-  - Image: Native Canvas / `createImageBitmap` / `OffscreenCanvas`.
-  - Document / PDF: Local browser-compatible libraries.
-  - Audio / Video: Locally bundled WebAssembly engine.
-- **Concurrency**: Offloaded to Web Workers to ensure seamless UI responsiveness.
-- **Storage & State**: `localStorage` used solely for UI preferences (theme); files and blobs managed in ephemeral memory with strict resource cleanup (`URL.revokeObjectURL`).
+  - **Image Conversion**: Browser-native Canvas / `createImageBitmap` (PNG, JPG, JPEG, WebP) with quality controls and transparency handling.
+  - **Document Conversion**: Pure JavaScript offline PDF 1.4 multi-page document generator (`PdfDocument`), Markdown compiler (`MarkdownParser`), and PDF text extractor (`PdfExtractor`).
+  - **Audio & Video Conversion**: Locally bundled FFmpeg 0.12 WebAssembly engine (`ffmpeg-core.js` and `ffmpeg-core.wasm` in `public/ffmpeg/` and `libs/local/ffmpeg/`).
+- **Memory Hygiene**: Ephemeral memory management, automatic unlinking of virtual filesystem files (`deleteFile`), and explicit `URL.revokeObjectURL()` cleanup.
+- **Concurrency & Responsiveness**: AbortSignal-based cancellation with immediate worker termination; non-blocking sequential queue execution.
+
+## Supported Formats
+
+| Category | Input Formats | Output Formats | Processing Engine |
+| :--- | :--- | :--- | :--- |
+| **Image** | PNG, JPG, JPEG, WebP | PNG, JPG, JPEG, WebP | Browser-native Canvas API |
+| **Document** | TXT, MD, Markdown, HTML, JSON, PDF | PDF, TXT, HTML | Native JS Generator / Parser / Extractor |
+| **Audio** | MP3, WAV, OGG, AAC, M4A, FLAC | MP3, WAV, OGG, AAC, FLAC | Bundled FFmpeg WebAssembly |
+| **Video** | MP4, WebM, MOV, MKV, AVI | MP4, WebM, MP3, WAV | Bundled FFmpeg WebAssembly |
+
+*Note: Video-to-audio extraction (e.g. MP4 to MP3/WAV) is fully supported natively.*
 
 ## Project Documentation
 
@@ -28,3 +39,4 @@ A 100% offline, privacy-first file conversion web application built with vanilla
 - [PROJECT_STATE.md](file:///d:/Frontend/All_Projects/Apps/File-Converter/PROJECT_STATE.md): Source of truth for project status
 - [TODO.md](file:///d:/Frontend/All_Projects/Apps/File-Converter/TODO.md): Task board and roadmap
 - [CHANGELOG.md](file:///d:/Frontend/All_Projects/Apps/File-Converter/CHANGELOG.md): Historical change records
+

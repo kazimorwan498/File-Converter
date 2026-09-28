@@ -48,17 +48,19 @@ export const SUPPORTED_FORMATS = {
   json: { category: 'document', mime: 'application/json', outputs: ['txt'] },
 
   // Audio
-  mp3: { category: 'audio', mime: 'audio/mpeg', outputs: ['wav', 'ogg'] },
-  wav: { category: 'audio', mime: 'audio/wav', outputs: ['mp3', 'ogg'] },
-  ogg: { category: 'audio', mime: 'audio/ogg', outputs: ['mp3', 'wav'] },
-  aac: { category: 'audio', mime: 'audio/aac', outputs: ['mp3', 'wav'] },
-  m4a: { category: 'audio', mime: 'audio/mp4', outputs: ['mp3', 'wav'] },
+  mp3: { category: 'audio', mime: 'audio/mpeg', outputs: ['wav', 'ogg', 'aac', 'm4a', 'flac'] },
+  wav: { category: 'audio', mime: 'audio/wav', outputs: ['mp3', 'ogg', 'aac', 'm4a', 'flac'] },
+  ogg: { category: 'audio', mime: 'audio/ogg', outputs: ['mp3', 'wav', 'aac', 'm4a'] },
+  aac: { category: 'audio', mime: 'audio/aac', outputs: ['mp3', 'wav', 'ogg', 'm4a'] },
+  m4a: { category: 'audio', mime: 'audio/mp4', outputs: ['mp3', 'wav', 'ogg', 'aac'] },
+  flac: { category: 'audio', mime: 'audio/flac', outputs: ['mp3', 'wav', 'ogg'] },
 
   // Video
-  mp4: { category: 'video', mime: 'video/mp4', outputs: ['webm', 'mp3'] },
-  webm: { category: 'video', mime: 'video/webm', outputs: ['mp4', 'mp3'] },
-  mov: { category: 'video', mime: 'video/quicktime', outputs: ['mp4', 'webm'] },
-  mkv: { category: 'video', mime: 'video/x-matroska', outputs: ['mp4', 'webm'] }
+  mp4: { category: 'video', mime: 'video/mp4', outputs: ['webm', 'mp3', 'wav'] },
+  webm: { category: 'video', mime: 'video/webm', outputs: ['mp4', 'mp3', 'wav'] },
+  mov: { category: 'video', mime: 'video/quicktime', outputs: ['mp4', 'webm', 'mp3'] },
+  mkv: { category: 'video', mime: 'video/x-matroska', outputs: ['mp4', 'webm', 'mp3'] },
+  avi: { category: 'video', mime: 'video/x-msvideo', outputs: ['mp4', 'webm', 'mp3'] }
 };
 
 /**

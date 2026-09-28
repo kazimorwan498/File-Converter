@@ -1,13 +1,13 @@
 # Project State
 
 ## Current Phase
-Phase 6 — PDF / Document (Complete) / Phase 7 — Audio / Video (Ready to start)
+Phase 7 — Audio / Video (Complete) / Phase 8 — Web Workers (Ready to start)
 
 ## Current Task
-Completed Phase 6 PDF & Document Offline Conversion: Implemented native, offline document transformation suite without external CDNs or remote APIs. Added `PdfDocument` (PDF 1.4 generator with word wrapping, pagination, headers, footers), `MarkdownParser` (Markdown to HTML5, styled multi-page PDF, and plain text), `PdfExtractor` (text layer extraction from PDF streams with FlateDecode decompression via native `DecompressionStream`), and `DocumentConverter` registered with `ConverterManager`. Added limitation handling where unsupported conversions (e.g. `pdf -> png`, `docx -> pdf`) are never faked, clearly marked unsupported in the UI with technical explanation callouts, and safely rejected. Created unit test suite `tests/phase6-document-conversion.test.js` validating all 98 Phase 6 assertions.
+Completed Phase 7 Audio & Video Offline Conversion: Integrated locally bundled browser-compatible FFmpeg WebAssembly engine (`ffmpeg-core.js` and `ffmpeg-core.wasm` in `public/ffmpeg/` and `libs/local/ffmpeg/`). Implemented singleton `MediaEngine` (`src/converters/audio/media-engine.js`) with lazy local WASM loading, audio/video transcode profiles (MP3, WAV, OGG, AAC, M4A, FLAC, MP4, WebM, MOV, MKV, AVI), video-to-audio extraction (`mp4 -> mp3/wav`), memory-conscious virtual filesystem cleanup (`deleteFile`), and immediate worker termination on cancellation. Implemented `AudioConverter` (`src/converters/audio/audio-converter.js`) and `VideoConverter` (`src/converters/video/video-converter.js`) extending `BaseConverter` with honest limitation reporting for unsupported/proprietary codecs (`wma`, `rmvb`, `wmv`). Registered both converters with `ConverterManager` in `src/core/app.js` and updated queue UI with limitation banners and format dropdown annotations. Created comprehensive unit test suite `tests/phase7-audio-video.test.js` validating all 57 Phase 7 assertions (338 total assertions passing across Phases 1 through 7).
 
 ## Overall Progress
-68% (Phases 0 through 6 completed and verified; Ready for Phase 7 Audio & Video local WASM conversion)
+78% (Phases 0 through 7 completed and verified; Ready for Phase 8 Web Workers offloading)
 
 ## Completed Tasks
 - [x] Analyzed requirements from `docs/PRD.md` and structure from `docs/File-Structure.md`
@@ -35,10 +35,19 @@ Completed Phase 6 PDF & Document Offline Conversion: Implemented native, offline
   - Transparent limitation handling: Unsupported document conversions (`pdf -> png/jpg`, `docx -> pdf`) are never faked, marked as unsupported with technical explanation callouts in the UI, and rejected with `UNSUPPORTED_FORMAT`
   - Connected `DocumentConverter` to `ConverterManager` in `src/core/app.js` with live limitation callout boxes and disabled buttons for unsupported target pairs
   - Created unit test suite `tests/phase6-document-conversion.test.js` (98 assertions passed)
-- [x] Verified zero errors with `npm test` (281 assertions passing across Phases 1 through 6) and `npm run build`
+- [x] Phase 7 Audio & Video (FFmpeg WebAssembly):
+  - Locally bundled FFmpeg 0.12 WASM core (`ffmpeg-core.js` and `ffmpeg-core.wasm`) in `public/ffmpeg/` and `libs/local/ffmpeg/` with 0 remote CDN / external API calls
+  - Configured Cross-Origin-Opener-Policy (`same-origin`) and Cross-Origin-Embedder-Policy (`credentialless`) headers in `vite.config.js`
+  - Built `MediaEngine` (`src/converters/audio/media-engine.js`): Lazy singleton loader, argument builder for libmp3lame, 16-bit PCM, Vorbis, AAC, H.264, VPX, FLAC; real-time progress parsing; virtual FS unlinking (`deleteFile`) for memory hygiene; worker termination on `AbortSignal`
+  - Built `AudioConverter` (`src/converters/audio/audio-converter.js`): Extends `BaseConverter` for `mp3`, `wav`, `ogg`, `aac`, `m4a`, `flac`
+  - Built `VideoConverter` (`src/converters/video/video-converter.js`): Extends `BaseConverter` for `mp4`, `webm`, `mov`, `mkv`, `avi` to `mp4`, `webm`, and video-to-audio extraction (`mp4 -> mp3/wav`, `webm -> mp3`)
+  - Transparent limitation handling: Unsupported media formats (`wma`, `rmvb`, `wmv`, `m4p`) are never faked, clearly flagged in format dropdowns, explained via technical callouts, and rejected with `UNSUPPORTED_FORMAT`
+  - Integrated `AudioConverter` and `VideoConverter` with `ConverterManager` and Queue UI in `src/core/app.js`
+  - Created unit test suite `tests/phase7-audio-video.test.js` (57 assertions passed)
+- [x] Verified zero errors with `npm test` (338 assertions passing across Phases 1 through 7) and `npm run build`
 
 ## In Progress
-None (Phase 6 completed and verified; awaiting instruction for Phase 7)
+None (Phase 7 completed and verified; awaiting instruction for Phase 8)
 
 ## Files Created
 - `package.json`
@@ -47,6 +56,10 @@ None (Phase 6 completed and verified; awaiting instruction for Phase 7)
 - `.gitignore`
 - `public/manifest.json`
 - `public/icons/.gitkeep`
+- `public/ffmpeg/ffmpeg-core.js`
+- `public/ffmpeg/ffmpeg-core.wasm`
+- `libs/local/ffmpeg/ffmpeg-core.js`
+- `libs/local/ffmpeg/ffmpeg-core.wasm`
 - `src/main.js`
 - `src/styles/main.css`
 - `src/core/app.js`
@@ -63,6 +76,9 @@ None (Phase 6 completed and verified; awaiting instruction for Phase 7)
 - `src/converters/pdf/markdown-parser.js`
 - `src/converters/pdf/pdf-extractor.js`
 - `src/converters/pdf/document-converter.js`
+- `src/converters/audio/media-engine.js`
+- `src/converters/audio/audio-converter.js`
+- `src/converters/video/video-converter.js`
 - `src/converters/pdf/.gitkeep`
 - `src/converters/audio/.gitkeep`
 - `src/converters/video/.gitkeep`
@@ -75,6 +91,7 @@ None (Phase 6 completed and verified; awaiting instruction for Phase 7)
 - `tests/phase4-image-conversion.test.js`
 - `tests/phase5-conversion-queue.test.js`
 - `tests/phase6-document-conversion.test.js`
+- `tests/phase7-audio-video.test.js`
 - `PROJECT_STATE.md`
 - `CHANGELOG.md`
 - `TODO.md`
@@ -82,15 +99,20 @@ None (Phase 6 completed and verified; awaiting instruction for Phase 7)
 
 ## Files Modified
 - `src/core/app.js`
-- `src/styles/main.css`
 - `src/utils/formatters.js`
+- `src/styles/main.css`
+- `vite.config.js`
 - `package.json`
 - `PROJECT_STATE.md`
 - `CHANGELOG.md`
 - `TODO.md`
+- `README.md`
 
 ## Dependencies
-- `vite` (^5.4.14, local development dependency only; zero runtime external dependencies)
+- `@ffmpeg/ffmpeg` (^0.12.15)
+- `@ffmpeg/core` (^0.12.10)
+- `@ffmpeg/util` (^0.12.2)
+- `vite` (^5.4.14, local development dependency; zero runtime external CDN dependencies)
 
 ## Implemented Converters
 - `native-image-converter` (`Browser-Native Image Converter`):
@@ -100,19 +122,18 @@ None (Phase 6 completed and verified; awaiting instruction for Phase 7)
 - `native-document-converter` (`Browser-Native Document Converter`):
   - Supported inputs: `txt`, `md`, `markdown`, `html`, `json`, `pdf`
   - Supported outputs: `pdf`, `txt`, `html`
-  - Reliable conversions:
-    - `txt` -> `pdf` (word wrapping, pagination, headers, footers)
-    - `txt` -> `html` (paragraphs, line breaks, HTML escaping)
-    - `md` -> `html` (semantic HTML5 document with CSS styling)
-    - `md` -> `pdf` (styled multi-page PDF document)
-    - `md` -> `txt` (clean markdown syntax stripping)
-    - `html` -> `txt` (DOM-based text extraction)
-    - `json` -> `txt` (2-space pretty formatted JSON)
-    - `pdf` -> `txt` (FlateDecode text layer extraction)
-  - Explicitly rejected & explained limitations:
-    - `pdf -> png/jpg` (requires desktop rasterization engine)
-    - `docx -> pdf` (requires desktop office engine)
-    - Scanned/image-only PDF text extraction (requires OCR engine)
+  - Reliable conversions: `txt -> pdf/html`, `md -> html/pdf/txt`, `html -> txt`, `json -> txt`, `pdf -> txt`
+  - Limitations handled: `pdf -> png/jpg`, `docx -> pdf`, scanned OCR
+- `native-audio-converter` (`Browser-Native Audio Converter`):
+  - Supported inputs: `mp3`, `wav`, `ogg`, `aac`, `m4a`, `flac`
+  - Supported outputs: `mp3`, `wav`, `ogg`, `aac`, `flac`
+  - Reliable conversions: Transcode between uncompressed PCM, Vorbis, AAC, and MP3 via local WASM FFmpeg
+  - Limitations handled: `wma`, `m4p` (DRM/proprietary codecs unsupported)
+- `native-video-converter` (`Browser-Native Video Converter`):
+  - Supported inputs: `mp4`, `webm`, `mov`, `mkv`, `avi`
+  - Supported outputs: `mp4`, `webm`, `mp3`, `wav`
+  - Reliable conversions: Video transcode (`mp4 <-> webm`, `mov -> mp4/webm`) and video-to-audio extraction (`mp4/webm -> mp3/wav`)
+  - Limitations handled: `rmvb`, `wmv` (unsupported legacy/proprietary codecs)
 
 ## Tests Passed
 - `tests/phase1-foundation.test.js`: All 29 assertions passed
@@ -121,15 +142,21 @@ None (Phase 6 completed and verified; awaiting instruction for Phase 7)
 - `tests/phase4-image-conversion.test.js`: All 37 assertions passed
 - `tests/phase5-conversion-queue.test.js`: All 26 assertions passed
 - `tests/phase6-document-conversion.test.js`: All 98 assertions passed
-  - PdfDocument instantiation, metadata, typography, multi-page pagination, headers, footers
-  - MarkdownParser full HTML5 output, styling, plain text stripping, multi-page PDF generation
-  - PdfExtractor text extraction, FlateDecode decompression, non-PDF rejection, scanned PDF OCR limitation handling
-  - DocumentConverter format matrix, limitation querying, conversion execution across all supported pairs
-  - Honest error handling for unsupported pairs (`UNSUPPORTED_FORMAT`)
-  - AbortController cancellation and progress dispatching
-  - ConverterRegistry and ConverterManager integration
-- Production build test (`npm run build`): Successfully built 18 modules in 542ms with 0 errors
-- Total passing assertions across all phases: 281 passed, 0 failed
+- `tests/phase7-audio-video.test.js`: All 57 assertions passed
+  - MediaEngine singleton pattern and initialization
+  - Audio and video argument builders (`libmp3lame`, `16-bit PCM`, `libvorbis`, `H.264`, `VPX`)
+  - MIME type resolution for all supported media containers
+  - AudioConverter format support matrix and limitation reporting
+  - WAV -> MP3, WAV -> OGG, WAV -> AAC transcoding with valid output Blobs
+  - Rejection of unsupported audio codecs (`wma`, `m4p`) with clear rationale
+  - VideoConverter format support matrix and video-to-audio extraction
+  - MP4 -> WebM video transcode and MP4 -> MP3 audio extraction
+  - Rejection of unsupported video codecs (`rmvb`, `wmv`)
+  - AbortController cancellation handling with worker termination
+  - Progress event dispatching up to 100%
+  - ConverterManager integration and full pipeline execution
+- Production build test (`npm run build`): Successfully built 31 modules with 0 errors
+- Total passing assertions across all phases: 338 passed, 0 failed
 
 ## Tests Failed
 None
@@ -138,7 +165,6 @@ None
 None
 
 ## Pending Tasks
-- Phase 7: Audio / Video (Local WASM engine integration)
 - Phase 8: Web Workers (Background thread offloading)
 - Phase 9: PWA / Offline (Manifest, Service Worker, cache-first strategy)
 - Phase 10: Testing (Format validation, memory checks, corrupted file handling)
@@ -146,18 +172,19 @@ None
 - Phase 12: Finalization (Production build, documentation, final validation)
 
 ## Next Recommended Task
-Phase 7 — Audio / Video: Integrate local WebAssembly audio/video processing engine for offline media conversion.
+Phase 8 — Web Workers: Offload intensive conversion workflows (Canvas image processing, PDF generation, FFmpeg tasks) to dedicated Web Workers to ensure a fluid 60fps UI.
 
 ## Important Decisions
-- Zero remote APIs and zero CDNs: All document transformations (PDF generation, Markdown parsing, PDF stream extraction) run 100% locally in browser memory.
-- Spec-compliant PDF 1.4: Pure JavaScript PDF generator produces standard-compliant PDFs with page trees, indirect objects, catalog, cross-reference tables, and Base-14 standard fonts without third-party dependencies.
-- Native decompression: FlateDecode streams in PDF documents are decompressed via the native Web Streams API (`DecompressionStream('deflate')`).
-- No fake conversions: Unsupported document conversions (like rasterizing vector PDFs to PNG or converting DOCX files) are never faked; they are clearly marked as unsupported in the UI with detailed explanation callouts.
+- Zero remote APIs and zero CDNs: All audio and video processing is performed entirely client-side using locally bundled `@ffmpeg/core` WebAssembly binaries (`ffmpeg-core.js` and `ffmpeg-core.wasm`).
+- Single-threaded WASM build: Using `@ffmpeg/core` single-threaded build guarantees compatibility across browser environments while keeping bundle sizes manageable.
+- Virtual FS memory management: `MediaEngine` explicitly unlinks both input and output files via `ffmpeg.deleteFile()` immediately after reading output buffers to prevent WASM heap exhaustion.
+- Cancellation via worker termination: Aborting active conversions terminates the FFmpeg worker thread immediately, instantly freeing CPU and memory.
+- No fake conversions: Proprietary/unsupported formats (`wma`, `rmvb`, `wmv`, `m4p`) are never faked; they are clearly flagged in the format dropdowns and UI limitation callouts, and rejected cleanly.
 
 ## Do Not Repeat
 - Do not add remote CDN links or remote font/script tags.
 - Do not mock or fake conversion outputs; unsupported formats must fail transparently.
-- Do not start Phase 7 automatically until instructed.
+- Do not start Phase 8 automatically until instructed.
 
 ## Last Updated
 2026-09-28

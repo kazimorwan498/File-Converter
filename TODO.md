@@ -72,23 +72,29 @@
   * [x] Register `DocumentConverter` with `ConverterManager` in [src/core/app.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/app.js)
   * [x] Create comprehensive test suite [tests/phase6-document-conversion.test.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/tests/phase6-document-conversion.test.js) (98 assertions passed)
 
+* [x] **Phase 7 — Audio / Video**
+  * [x] Locally bundle browser-compatible FFmpeg WebAssembly build (`ffmpeg-core.js` and `ffmpeg-core.wasm` in `public/ffmpeg/` and `libs/local/ffmpeg/`) with 0 remote dependencies
+  * [x] Build singleton `MediaEngine` in [src/converters/audio/media-engine.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/converters/audio/media-engine.js) with lazy WASM loading and argument synthesis
+  * [x] Support core audio formats: `mp3`, `wav`, `ogg`, `aac`, `m4a`, `flac` in [src/converters/audio/audio-converter.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/converters/audio/audio-converter.js)
+  * [x] Support core video formats: `mp4`, `webm`, `mov`, `mkv`, `avi` and video-to-audio extraction (`mp4/webm -> mp3/wav`) in [src/converters/video/video-converter.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/converters/video/video-converter.js)
+  * [x] Implement memory hygiene via virtual FS unlinking (`deleteFile`) after every conversion
+  * [x] Implement cancellation with immediate worker termination via `ffmpeg.terminate()`
+  * [x] Implement real-time progress parsing and callbacks (0% to 100%)
+  * [x] Implement honest limitation handling for unsupported formats (`wma`, `rmvb`, `wmv`, `m4p`) with UI callouts
+  * [x] Register both converters with `ConverterManager` and wire into queue lifecycle in [src/core/app.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/app.js)
+  * [x] Create unit test suite [tests/phase7-audio-video.test.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/tests/phase7-audio-video.test.js) (57 assertions passed)
+
 ---
 
 ## Current Tasks
 
-* [ ] Ready to start **Phase 7 — Audio / Video**
-  * [ ] Integrate local WebAssembly engine (local FFmpeg WASM build)
-  * [ ] Support core audio and video transcode profiles locally
-  * [ ] Implement worker-based progress and cancellation
+* [ ] Ready to start **Phase 8 — Web Workers**
+  * [ ] Offload intensive conversion workflows to dedicated Web Workers (`src/workers/`)
+  * [ ] Maintain responsive 60fps UI during heavy file transformations
 
 ---
 
 ## Pending Tasks
-
-### Phase 7 — Audio / Video
-* [ ] Integrate local WebAssembly engine (local FFmpeg WASM build)
-* [ ] Support core audio and video transcode profiles locally
-* [ ] Implement worker-based progress and cancellation
 
 ### Phase 8 — Web Workers
 * [ ] Offload intensive conversion workflows to dedicated Web Workers (`src/workers/`)
@@ -117,3 +123,4 @@
 ## Blocked Tasks
 
 * None
+

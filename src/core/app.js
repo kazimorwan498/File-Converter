@@ -10,6 +10,8 @@ import { ConverterManager } from './converter-manager.js';
 import { DownloadManager } from './download-manager.js';
 import { ImageConverter } from '../converters/image/image-converter.js';
 import { DocumentConverter, DOCUMENT_CONVERSION_LIMITATIONS } from '../converters/pdf/document-converter.js';
+import { AudioConverter } from '../converters/audio/audio-converter.js';
+import { VideoConverter } from '../converters/video/video-converter.js';
 import { generateOutputFilename } from '../utils/formatters.js';
 
 export class App {
@@ -26,6 +28,14 @@ export class App {
     // Register native DocumentConverter
     this.documentConverter = new DocumentConverter();
     this.converterManager.registerConverter(this.documentConverter);
+
+    // Register local WASM AudioConverter
+    this.audioConverter = new AudioConverter();
+    this.converterManager.registerConverter(this.audioConverter);
+
+    // Register local WASM VideoConverter
+    this.videoConverter = new VideoConverter();
+    this.converterManager.registerConverter(this.videoConverter);
 
     // Track active object URLs for previews to prevent memory leaks
     this.previewUrls = new Map();
@@ -337,6 +347,28 @@ export class App {
     }
   }
 
+  /**
+   * Resolve limitation details for any format pair across registered converters
+   * @param {string} inExt
+   * @param {string} outExt
+   * @returns {{ isSupported: boolean, reason?: string }}
+   */
+  getLimitation(inExt, outExt) {
+    if (this.documentConverter && (this.documentConverter.canConvert(inExt) || this.documentConverter.inputFormats.includes(inExt))) {
+      return this.documentConverter.getConversionLimitation(inExt, outExt);
+    }
+    if (this.audioConverter && (this.audioConverter.canConvert(inExt) || this.audioConverter.inputFormats.includes(inExt))) {
+      return this.audioConverter.getConversionLimitation(inExt, outExt);
+    }
+    if (this.videoConverter && (this.videoConverter.canConvert(inExt) || this.videoConverter.inputFormats.includes(inExt))) {
+      return this.videoConverter.getConversionLimitation(inExt, outExt);
+    }
+    return {
+      isSupported: false,
+      reason: `Direct offline conversion from .${(inExt || '').toUpperCase()} to .${(outExt || '').toUpperCase()} is not supported.`
+    };
+  }
+
   createQueueItemElement(item) {
     const li = document.createElement('li');
     li.className = 'queue-item';
@@ -359,7 +391,7 @@ export class App {
     }
 
     const isSupported = this.converterManager.canConvert(item.extension, item.outputFormat);
-    const limitation = !isSupported ? this.documentConverter.getConversionLimitation(item.extension, item.outputFormat) : null;
+    const limitation = !isSupported ? this.getLimitation(item.extension, item.outputFormat) : null;
 
     const optionsHtml = item.availableOutputs.map(out => {
       const selected = out === item.outputFormat ? 'selected' : '';
@@ -490,7 +522,7 @@ export class App {
             sBadge.textContent = 'Queued';
           }
         } else {
-          const lim = this.documentConverter.getConversionLimitation(item.extension, nextFormat);
+          const lim = this.getLimitation(item.extension, nextFormat);
           if (limText) limText.textContent = lim.reason || 'This conversion is unsupported offline.';
           limBox?.classList.remove('hidden');
           if (cBtn) {
@@ -585,7 +617,7 @@ export class App {
 
     // Check for unsupported offline conversion
     if (!this.converterManager.canConvert(item.extension, item.outputFormat)) {
-      const lim = this.documentConverter.getConversionLimitation(item.extension, item.outputFormat);
+      const lim = this.getLimitation(item.extension, item.outputFormat);
       const err = new ConversionError(
         lim.reason || `Conversion from ${item.extension.toUpperCase()} to ${item.outputFormat.toUpperCase()} is unsupported offline.`,
         'UNSUPPORTED_FORMAT'

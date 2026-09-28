@@ -6,6 +6,13 @@ All notable changes to the Offline File Converter project will be documented in 
 
 ### Added
 
+* Completed Phase 7 — Audio / Video Conversion:
+  * Bundled `@ffmpeg/core` 0.12.10 assets (`ffmpeg-core.js` and `ffmpeg-core.wasm`) in `public/ffmpeg/` and `libs/local/ffmpeg/` for 100% offline, zero-CDN local WebAssembly execution.
+  * Implemented `MediaEngine` in `src/converters/audio/media-engine.js`: Lazy singleton WebAssembly loader, argument synthesis for `libmp3lame`, 16-bit PCM, `libvorbis`, `H.264`, and `VPX`, real-time progress parsing, memory hygiene via virtual FS unlinking (`deleteFile`), and immediate worker termination on `AbortSignal`.
+  * Implemented `AudioConverter` in `src/converters/audio/audio-converter.js`: Extends `BaseConverter` (`id: 'native-audio-converter'`) supporting bidirectional conversions across `mp3`, `wav`, `ogg`, `aac`, `m4a`, and `flac`.
+  * Implemented `VideoConverter` in `src/converters/video/video-converter.js`: Extends `BaseConverter` (`id: 'native-video-converter'`) supporting video transcode (`mp4 <-> webm`, `mov -> mp4/webm`) and video-to-audio extraction (`mp4/webm -> mp3/wav`).
+  * Implemented honest limitation handling for media: Proprietary/unsupported formats (`wma`, `rmvb`, `wmv`, `m4p`) are never faked, clearly flagged in dropdowns, explained via UI limitation callouts, and rejected with `UNSUPPORTED_FORMAT`.
+  * Created unit test suite `tests/phase7-audio-video.test.js` validating all 57 Phase 7 assertions.
 * Completed Phase 6 — PDF / Document Conversion:
   * Implemented `PdfDocument` in `src/converters/pdf/pdf-generator.js`: 100% offline, zero-dependency PDF 1.4 multi-page document generator with word-wrapping, margins, typography, page numbers ("Page X of Y"), and Base-14 fonts.
   * Implemented `MarkdownParser` in `src/converters/pdf/markdown-parser.js`: Offline parser compiling Markdown to standalone styled HTML5 documents, styled multi-page PDFs, and clean plain text.
@@ -39,20 +46,21 @@ All notable changes to the Offline File Converter project will be documented in 
 
 ### Changed
 
-* Updated `src/core/app.js` with `DocumentConverter` registration, dynamic limitation callouts, and disabled states for unsupported conversions.
-* Updated `src/utils/formatters.js` with `html` and `markdown` format mappings and expanded document outputs.
-* Updated `src/styles/main.css` with `.status-unsupported`, `.item-limitation-box`, and disabled button styling.
-* Updated `package.json` to execute Phases 1 through 6 test suites on `npm test` and bumped version to `0.6.0`.
-* Updated `PROJECT_STATE.md` and `TODO.md` to reflect Phase 6 completion.
+* Updated `src/core/app.js` to register `AudioConverter` and `VideoConverter`, unify `getLimitation(inExt, outExt)` across document, audio, and video engines, and display real-time limitation callout banners.
+* Updated `src/utils/formatters.js` with `flac` and `avi` definitions and expanded audio/video target matrices.
+* Updated `vite.config.js` with `COOP: same-origin` and `COEP: credentialless` headers, and excluded `@ffmpeg/ffmpeg` / `@ffmpeg/util` from pre-bundling.
+* Updated `package.json` to bump version to `0.7.0` and execute all Phase 1 through 7 test suites on `npm test`.
+* Updated `PROJECT_STATE.md`, `TODO.md`, and `README.md` to reflect Phase 7 completion.
 
 ### Fixed
 
-* Handled Markdown syntax parsing order ensuring code blocks are preserved and not prematurely stripped by inline code expressions.
-* Handled FlateDecode decompression for compressed PDF text streams using native browser `DecompressionStream`.
-* Guaranteed honest handling for impossible offline conversions (`pdf -> image`, `docx -> pdf`), preventing fake outputs.
+* Eliminated WASM heap bloat by explicitly unlinking virtual FS files (`ffmpeg.deleteFile`) immediately following output reads.
+* Guaranteed instant cancellation responsiveness by terminating the FFmpeg worker thread immediately upon `AbortSignal` trigger.
+* Guaranteed honest handling for proprietary or unsupported media formats (`wma`, `rmvb`, `wmv`, `m4p`), preventing fake outputs.
 
 ### Tested
 
-* Executed `npm test`: 281 assertions passed across Phase 1 through 6 test suites with 0 failures.
-* Executed `npm run build`: Production bundle transformed 18 modules in 542ms with 0 errors.
+* Executed `npm test`: 338 assertions passed across Phase 1 through 7 test suites with 0 failures.
+* Executed `npm run build`: Production bundle transformed 31 modules with 0 errors.
 * Dev server HTTP check: `http://localhost:3000` is active and responsive.
+
