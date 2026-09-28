@@ -1,31 +1,28 @@
 # Project State
 
 ## Current Phase
-Phase 0 — Project Planning & Setup (Complete) / Phase 1 — Application Foundation (Ready to start)
+Phase 1 — Application Foundation (Complete) / Phase 2 — File System (Ready to start)
 
 ## Current Task
-Initialize project structure, Vite configuration, index.html, core styles, and structure scaffolding.
+Completed Phase 1 Application Foundation: application shell, responsive layout, dark/light/system theme management, drop zone with visual states and browse button, empty queue state, and automated tests.
 
 ## Overall Progress
-10% (Phase 0 completed; Project structure, Vite setup, package.json, index.html, src directories initialized and build-tested; Ready for Phase 1 feature implementation)
+20% (Phase 0 Planning and Phase 1 Application Foundation completed and fully tested; Ready for Phase 2 File System & Queue Management)
 
 ## Completed Tasks
 - [x] Analyzed requirements from `docs/PRD.md` and structure from `docs/File-Structure.md`
-- [x] Initialized `PROJECT_STATE.md` tracking document
-- [x] Initialized `CHANGELOG.md` audit log
-- [x] Initialized `TODO.md` roadmap and task board
-- [x] Initialized `README.md` project overview and offline guidelines
+- [x] Initialized tracking documents (`PROJECT_STATE.md`, `CHANGELOG.md`, `TODO.md`, `README.md`)
 - [x] Initialized Vite project and configured `package.json` and `vite.config.js`
-- [x] Created `index.html` with semantic structure, accessibility attributes, and UI component shell
-- [x] Created `src/styles/main.css` containing dark/light theme tokens and modern aesthetic styling
-- [x] Created `src/` scaffolding: `src/main.js`, `src/core/app.js`, `src/core/state-manager.js`, `src/core/converter-manager.js`, `src/core/file-manager.js`, `src/core/download-manager.js`, `src/utils/formatters.js`
-- [x] Created directory structure for `public/icons`, `src/converters/` (image, pdf, audio, video), `src/workers`, `libs/local`, and `tests`
+- [x] Created accessible application shell in `index.html` with semantic landmark roles, privacy badge, drop zone, queue panel, and ARIA live announcer
+- [x] Implemented theme system in `src/core/state-manager.js` supporting light, dark, and system preference with dynamic OS media query listeners and `localStorage` persistence
+- [x] Built responsive CSS design system in `src/styles/main.css` with dark/light design tokens, glassmorphism, focus rings, hover animations, and mobile breakpoints
+- [x] Implemented core controller in `src/core/app.js` wiring theme toggling, drag-and-drop hover/dragover states, browse button triggers, and empty queue state
 - [x] Created `public/manifest.json` for PWA foundation
-- [x] Executed production build checks (`npm run build` transformed 6 modules and produced clean production bundle in 203ms)
-- [x] Verified Vite development server startup
+- [x] Created test suite `tests/phase1-foundation.test.js` validating all 29 markup, styling, and controller assertions
+- [x] Verified zero console/build errors with `npm run build` (206ms production bundle) and `npm test`
 
 ## In Progress
-None (Phase 0 tasks fully completed; awaiting start of Phase 1 implementation)
+None (Phase 1 tasks completed and verified; awaiting instruction for Phase 2)
 
 ## Files Created
 - `package.json`
@@ -49,12 +46,18 @@ None (Phase 0 tasks fully completed; awaiting start of Phase 1 implementation)
 - `src/workers/.gitkeep`
 - `libs/local/.gitkeep`
 - `tests/.gitkeep`
+- `tests/phase1-foundation.test.js`
 - `PROJECT_STATE.md`
 - `CHANGELOG.md`
 - `TODO.md`
 - `README.md`
 
 ## Files Modified
+- `index.html`
+- `src/styles/main.css`
+- `src/core/state-manager.js`
+- `src/core/app.js`
+- `package.json`
 - `PROJECT_STATE.md`
 - `CHANGELOG.md`
 - `TODO.md`
@@ -63,22 +66,21 @@ None (Phase 0 tasks fully completed; awaiting start of Phase 1 implementation)
 - `vite` (^5.4.14, local development dependency only; zero runtime external dependencies)
 
 ## Implemented Converters
-None (Converters strictly deferred to Phase 4: Image, Phase 6: Document, Phase 7: Audio/Video)
+None (converters deferred to Phase 4: Image, Phase 6: Document, Phase 7: Audio/Video)
 
 ## Tests Passed
-- File structure verification: All folders and files match `docs/File-Structure.md`
-- Production build test (`npm run build`): Successfully built in 203ms with 0 errors
-- Dev server initialization (`npx vite`): Successfully served locally on localhost:3001 in 487ms
+- `tests/phase1-foundation.test.js`: All 29 assertions passed (HTML elements, accessibility landmarks, CSS design tokens, StateManager theme cycling, App lifecycle)
+- Production build test (`npm run build`): Successfully built in 206ms with 0 errors
+- Dev server HTTP check: `http://localhost:3000` responds HTTP 200 OK
 
 ## Tests Failed
-None
+- Browser subagent automation: Playwright driver binary download 404 from upstream provider (out-of-band environment limitation; unit and build checks executed directly via Node.js toolchain)
 
 ## Known Issues
-None
+- Playwright browser driver download 404 prevented automated browser subagent screenshots; headless Node unit tests and dev server HTTP verification passed cleanly.
 
 ## Pending Tasks
-- Phase 1: Application Foundation (Full UI interaction, theme toggle hookup, status announcements)
-- Phase 2: File System (Drag & drop zone, file picker, validation, queue data structures)
+- Phase 2: File System (File picker, drag & drop ingestion, file validation, queue item data structures, metadata parsing)
 - Phase 3: Converter Engine (Converter registry, lifecycle management, format discovery)
 - Phase 4: Image Conversion (Native Canvas/Blob/createImageBitmap conversions: PNG, JPG, WebP)
 - Phase 5: Conversion Queue (Batch processing, progress tracking, cancellation)
@@ -91,18 +93,18 @@ None
 - Phase 12: Finalization (Production build, documentation, final validation)
 
 ## Next Recommended Task
-Phase 1: Application Foundation — Implement theme switcher reactivity and drop zone interaction wiring in `src/core/app.js` and verify end-to-end in browser.
+Phase 2 — File System: Implement `FileManager` in `src/core/file-manager.js` with MIME-type detection, size validation, duplicate handling, and queue item models.
 
 ## Important Decisions
 - Strictly offline: No CDN dependencies, no external APIs, zero server communication.
-- Browser-native first: Canvas API and OffscreenCanvas for image conversions before considering third-party WASM binaries.
-- Strict state tracking: Maintain `PROJECT_STATE.md`, `CHANGELOG.md`, and `TODO.md` after every single task.
-- Vite build tooling: Fast ES Module development and standard production bundler producing zero-external-dependency static outputs.
+- Theme architecture: 3-state cycle (System -> Dark -> Light -> System) with reactive OS listener and local storage persistence.
+- Ephemeral memory for files: Never persist user files or metadata in `localStorage`.
+- Accessibility-first: Semantic headings, ARIA live announcer (`#a11y-announcer`), keyboard shortcuts for dropzone.
 
 ## Do Not Repeat
 - Do not add remote CDN links or remote font/script tags.
 - Do not mock or fake conversion outputs; unsupported formats must fail transparently.
-- Do not start Phase 1 implementation until instructed.
+- Do not start Phase 2 automatically until instructed.
 
 ## Last Updated
 2026-09-28

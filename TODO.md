@@ -12,29 +12,30 @@
   * [x] Create project structure matching `docs/File-Structure.md`
   * [x] Initialize Vite project configuration ([vite.config.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/vite.config.js))
   * [x] Configure [package.json](file:///d:/Frontend/All_Projects/Apps/File-Converter/package.json)
+  * [x] Create initial scaffolding in `src/`
+* [x] **Phase 1 — Application Foundation**
   * [x] Create accessible application shell in [index.html](file:///d:/Frontend/All_Projects/Apps/File-Converter/index.html)
-  * [x] Create CSS design tokens and theme system in [src/styles/main.css](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/styles/main.css)
-  * [x] Create core scaffolding in `src/` ([main.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/main.js), `src/core/`, `src/utils/`)
-  * [x] Create directory placeholders for converters, workers, libs, and tests (without implementing converters)
-  * [x] Run development and build checks (`npm run build` and Vite dev server test)
+  * [x] Implement Light / Dark / System theme management and OS listener in [src/core/state-manager.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/state-manager.js)
+  * [x] Build modern, responsive CSS design system in [src/styles/main.css](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/styles/main.css)
+  * [x] Implement application lifecycle, theme toggle button cycling, and dragover visual feedback in [src/core/app.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/app.js)
+  * [x] Connect browse button and keyboard shortcuts (Enter/Space) to file picker
+  * [x] Create empty queue state with feature highlights
+  * [x] Create test suite [tests/phase1-foundation.test.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/tests/phase1-foundation.test.js) and configure `npm test`
+  * [x] Verify production build and local server functionality
 
 ---
 
 ## Current Tasks
 
-* [ ] Ready to start **Phase 1 — Application Foundation**
-  * [ ] Connect theme switcher toggle and test dark/light transitions
-  * [ ] Bind basic drop zone events and visual hover states
-  * [ ] Build application shell interaction and status feedback
+* [ ] Ready to start **Phase 2 — File System**
+  * [ ] Implement file picker ingestion and drag & drop ingestion in [src/core/file-manager.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/file-manager.js)
+  * [ ] Implement file validation (MIME types, size limits, duplicate detection)
+  * [ ] Build queue item data structures and render queue item list in UI
+  * [ ] Implement file item removal and clear queue actions
 
 ---
 
 ## Pending Tasks
-
-### Phase 2 — File System
-* [ ] Implement file picker and drag-and-drop zone (`src/core/file-manager.js`)
-* [ ] Implement file validation (MIME type inspection, size checking, duplicate detection)
-* [ ] Implement queue data structures and status management
 
 ### Phase 3 — Converter Engine
 * [ ] Build converter registry and lifecycle manager (`src/core/converter-manager.js`)

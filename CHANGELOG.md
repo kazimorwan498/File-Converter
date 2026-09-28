@@ -6,25 +6,28 @@ All notable changes to the Offline File Converter project will be documented in 
 
 ### Added
 
+* Completed Phase 1 — Application Foundation:
+  * Application shell with header, title, privacy badge, theme button, drop zone, and queue section.
+  * Light, Dark, and System theme handling with OS color scheme reactivity in `src/core/state-manager.js`.
+  * Accessible drag-and-drop dropzone with browse button, keyboard triggers (Enter / Space), and visual dragover states.
+  * Empty queue state displaying privacy benefits and feature callouts.
+  * Responsive layout and CSS design system in `src/styles/main.css`.
+  * Unit test suite `tests/phase1-foundation.test.js` validating all Phase 1 structural and behavioral requirements.
 * Initialized project structure matching `docs/File-Structure.md` including `src/core/`, `src/converters/`, `src/workers/`, `src/utils/`, `libs/local/`, `tests/`, and `public/icons/`.
 * Initialized Vite build configuration (`vite.config.js`) and `package.json` with dev scripts.
-* Created `index.html` with accessible markup, theme toggle, drop zone, queue UI shell, and privacy badge.
-* Created `src/styles/main.css` containing comprehensive design tokens, light/dark themes, glassmorphism, and responsive layout.
-* Created modular scaffolding: `src/main.js`, `src/core/app.js`, `src/core/state-manager.js`, `src/core/converter-manager.js`, `src/core/file-manager.js`, `src/core/download-manager.js`, and `src/utils/formatters.js`.
-* Created `public/manifest.json` for PWA capabilities.
-* Created `.gitignore` to prevent tracking of build artifacts and dependencies.
-* Initialized `PROJECT_STATE.md`, `TODO.md`, `CHANGELOG.md`, and `README.md`.
 
 ### Changed
 
-* Formalized Phase 0 (Planning & Setup) deliverables and established project governance rules.
+* Updated `src/core/app.js` to manage theme cycling, drag-and-drop event wiring, and empty queue state.
+* Updated `package.json` to include `npm test` script.
+* Updated `PROJECT_STATE.md` and `TODO.md` to reflect Phase 1 completion.
 
 ### Fixed
 
-* Verified sandbox execution for Node.js toolchain and Vite bundler.
+* Verified standard sandbox isolation and verified production build bundling without external runtime dependencies.
 
 ### Tested
 
-* Executed `npm run build` with Vite 5: successfully bundled production assets in 203ms with 0 errors.
-* Tested Vite development server startup: verified instant local startup (487ms).
-* Verified filesystem structure against `docs/File-Structure.md`.
+* Executed `npm test` (`tests/phase1-foundation.test.js`): All 29 assertions passed.
+* Executed `npm run build`: Vite build completed in 206ms with 0 errors.
+* Verified local HTTP server response on `http://localhost:3000` (HTTP 200 OK).

@@ -5,14 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Offline File Converter — 100% Private & Local</title>
   <meta name="description" content="Fast, private, and 100% offline file converter. Convert images, documents, audio, and video directly inside your browser without uploading to any server." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z'/%3E%3Cpolyline points='14 2 14 8 20 8'/%3E%3Cpath d='M12 18v-6'/%3E%3Cpath d='m9 15 3 3 3-3'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="/src/styles/main.css" />
 </head>
 <body>
+  <!-- Accessible Live Announcer for Screen Readers -->
+  <div id="a11y-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
   <div id="app" class="app-container">
-    <header class="app-header">
+    <!-- Application Header -->
+    <header class="app-header" role="banner">
       <div class="header-brand">
         <div class="logo-icon" aria-hidden="true">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
             <polyline points="14 2 14 8 20 8"/>
             <path d="M12 18v-6"/>
@@ -21,86 +26,179 @@
         </div>
         <div class="brand-text">
           <h1 class="app-title">Offline File Converter</h1>
-          <span class="privacy-badge" title="No files are ever sent to an external server">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <div class="privacy-badge" title="No files are ever uploaded or sent across the network">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
-            100% Local &amp; Offline
-          </span>
+            <span>100% Private &bull; In-Browser</span>
+          </div>
         </div>
       </div>
 
       <div class="header-actions">
-        <button id="theme-toggle" class="btn btn-icon" aria-label="Toggle theme" title="Toggle Light/Dark Theme">
-          <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="4"/>
-            <path d="M12 2v2"/>
-            <path d="M12 20v2"/>
-            <path d="m4.93 4.93 1.41 1.41"/>
-            <path d="m17.66 17.66 1.41 1.41"/>
-            <path d="M2 12h2"/>
-            <path d="M20 12h2"/>
-            <path d="m6.34 17.66-1.41 1.41"/>
-            <path d="m19.07 4.93-1.41 1.41"/>
-          </svg>
-          <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
-          </svg>
+        <!-- Theme Toggle Button (Cycles: Dark -> Light -> System) -->
+        <button id="theme-toggle" class="btn btn-icon theme-btn" aria-label="Theme: Dark. Click to switch theme" title="Current: Dark (Click to change)">
+          <span class="theme-icon-container" aria-hidden="true">
+            <!-- Moon Icon (Dark Mode) -->
+            <svg class="theme-icon icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+            </svg>
+            <!-- Sun Icon (Light Mode) -->
+            <svg class="theme-icon icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2"/>
+              <path d="M12 20v2"/>
+              <path d="m4.93 4.93 1.41 1.41"/>
+              <path d="m17.66 17.66 1.41 1.41"/>
+              <path d="M2 12h2"/>
+              <path d="M20 12h2"/>
+              <path d="m6.34 17.66-1.41 1.41"/>
+              <path d="m19.07 4.93-1.41 1.41"/>
+            </svg>
+            <!-- Monitor/System Icon (System Mode) -->
+            <svg class="theme-icon icon-system" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="20" height="14" x="2" y="3" rx="2"/>
+              <line x1="8" x2="16" y1="21" y2="21"/>
+              <line x1="12" x2="12" y1="17" y2="21"/>
+            </svg>
+          </span>
+          <span id="theme-label" class="theme-label">Dark</span>
         </button>
       </div>
     </header>
 
-    <main class="main-content">
-      <!-- File Drop Zone -->
+    <main class="main-content" id="main-content">
+      <!-- File Drop Zone Section -->
       <section class="dropzone-section" aria-labelledby="dropzone-heading">
-        <h2 id="dropzone-heading" class="sr-only">Upload Files</h2>
-        <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-describedby="dropzone-desc">
-          <input type="file" id="file-input" class="file-input" multiple />
+        <h2 id="dropzone-heading" class="sr-only">Add Files For Conversion</h2>
+
+        <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-describedby="dropzone-hint dropzone-formats">
+          <input type="file" id="file-input" class="file-input" multiple aria-hidden="true" tabindex="-1" />
+          
           <div class="drop-zone-content">
-            <div class="drop-zone-icon">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <div class="drop-zone-icon-wrapper" aria-hidden="true">
+              <svg class="drop-zone-icon" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="17 8 12 3 7 8"/>
                 <line x1="12" y1="3" x2="12" y2="15"/>
               </svg>
             </div>
-            <p class="drop-zone-text">
-              <strong>Drag &amp; drop files here</strong> or <span class="browse-link">browse your device</span>
+
+            <div class="drop-zone-text-group">
+              <p class="drop-zone-title">
+                Drag &amp; drop files here, or
+              </p>
+              <button type="button" id="browse-btn" class="btn btn-primary browse-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m3 16 5-5c.9-.9 2.3-.9 3.2 0l5 5"/>
+                  <path d="m14 14 1-1c.9-.9 2.3-.9 3.2 0l3 3"/>
+                  <rect width="18" height="18" x="3" y="3" rx="2"/>
+                </svg>
+                Browse Files
+              </button>
+            </div>
+
+            <p id="dropzone-hint" class="drop-zone-hint">
+              Zero network uploads. All conversions run locally inside your browser engine.
             </p>
-            <p id="dropzone-desc" class="drop-zone-hint">
-              Images, Documents, Audio, and Video files processed 100% locally.
-            </p>
+
+            <div id="dropzone-formats" class="supported-badges" aria-label="Supported file categories">
+              <span class="badge">Images (PNG, JPG, WebP)</span>
+              <span class="badge">Documents (PDF)</span>
+              <span class="badge">Audio (MP3, WAV, OGG)</span>
+              <span class="badge">Video (MP4, WebM)</span>
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- Queue and Conversion Panel -->
-      <section id="queue-section" class="queue-section hidden" aria-labelledby="queue-heading">
+      <!-- Conversion Queue Panel -->
+      <section id="queue-section" class="queue-section" aria-labelledby="queue-heading">
         <div class="queue-header">
-          <h2 id="queue-heading" class="section-title">Conversion Queue (<span id="queue-count">0</span>)</h2>
+          <div class="queue-title-wrapper">
+            <h2 id="queue-heading" class="section-title">Conversion Queue</h2>
+            <span id="queue-count-badge" class="count-badge" aria-label="0 items in queue">0</span>
+          </div>
+
           <div class="queue-actions">
-            <button id="convert-all-btn" class="btn btn-primary" disabled>
+            <button id="convert-all-btn" class="btn btn-primary" disabled aria-disabled="true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
               Convert All
             </button>
-            <button id="download-all-btn" class="btn btn-secondary" disabled>
+            <button id="download-all-btn" class="btn btn-secondary" disabled aria-disabled="true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" x2="12" y1="15" y2="3"/>
+              </svg>
               Download All
             </button>
-            <button id="clear-all-btn" class="btn btn-outline">
-              Clear All
+            <button id="clear-all-btn" class="btn btn-outline" disabled aria-disabled="true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 6h18"/>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+              </svg>
+              Clear
             </button>
           </div>
         </div>
 
-        <ul id="file-queue-list" class="queue-list" role="list">
+        <!-- Empty Queue State -->
+        <div id="queue-empty-state" class="queue-empty-state" role="status">
+          <div class="empty-state-icon" aria-hidden="true">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+              <polyline points="13 2 13 9 20 9"/>
+            </svg>
+          </div>
+          <h3 class="empty-state-title">No files in queue</h3>
+          <p class="empty-state-text">
+            Select or drag files into the drop zone above. You will be able to configure format settings and convert files in batch.
+          </p>
+
+          <div class="features-pill-row">
+            <span class="feature-pill">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              100% Offline
+            </span>
+            <span class="feature-pill">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 14 14"/>
+              </svg>
+              Fast Local Processing
+            </span>
+            <span class="feature-pill">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M20 6 9 17l-5-5"/>
+              </svg>
+              Zero Server Uploads
+            </span>
+          </div>
+        </div>
+
+        <!-- Queue Item List (populated in Phase 2 / Phase 5) -->
+        <ul id="file-queue-list" class="queue-list hidden" role="list">
           <!-- Queue items rendered dynamically -->
         </ul>
       </section>
     </main>
 
-    <footer class="app-footer">
-      <p>
-        Offline File Converter &bull; Zero Server Communication &bull; Local Browser Execution
-      </p>
+    <!-- Application Footer -->
+    <footer class="app-footer" role="contentinfo">
+      <div class="footer-content">
+        <p class="footer-privacy">
+          <strong>Offline File Converter</strong> &bull; Client-Side Browser Execution &bull; No Remote APIs &bull; No Tracking
+        </p>
+        <p class="footer-note">
+          Designed for complete privacy and local performance.
+        </p>
+      </div>
     </footer>
   </div>
 
