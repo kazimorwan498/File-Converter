@@ -1,28 +1,44 @@
 # Project State
 
 ## Current Phase
-Phase 1 — Application Foundation (Complete) / Phase 2 — File System (Ready to start)
+Phase 2 — File System (Complete) / Phase 3 — Converter Engine (Ready to start)
 
 ## Current Task
-Completed Phase 1 Application Foundation: application shell, responsive layout, dark/light/system theme management, drop zone with visual states and browse button, empty queue state, and automated tests.
+Completed Phase 2 File System: Multi-file picker & drag-and-drop ingestion, file validation (0-byte rejection, unsupported format detection, duplicate detection), metadata extraction, queue item UI rendering with category icons, format selectors, remove item, clear queue, and comprehensive test suites.
 
 ## Overall Progress
-20% (Phase 0 Planning and Phase 1 Application Foundation completed and fully tested; Ready for Phase 2 File System & Queue Management)
+30% (Phase 0, Phase 1, and Phase 2 completed and verified; Ready for Phase 3 Converter Engine)
 
 ## Completed Tasks
 - [x] Analyzed requirements from `docs/PRD.md` and structure from `docs/File-Structure.md`
 - [x] Initialized tracking documents (`PROJECT_STATE.md`, `CHANGELOG.md`, `TODO.md`, `README.md`)
 - [x] Initialized Vite project and configured `package.json` and `vite.config.js`
-- [x] Created accessible application shell in `index.html` with semantic landmark roles, privacy badge, drop zone, queue panel, and ARIA live announcer
-- [x] Implemented theme system in `src/core/state-manager.js` supporting light, dark, and system preference with dynamic OS media query listeners and `localStorage` persistence
-- [x] Built responsive CSS design system in `src/styles/main.css` with dark/light design tokens, glassmorphism, focus rings, hover animations, and mobile breakpoints
-- [x] Implemented core controller in `src/core/app.js` wiring theme toggling, drag-and-drop hover/dragover states, browse button triggers, and empty queue state
-- [x] Created `public/manifest.json` for PWA foundation
-- [x] Created test suite `tests/phase1-foundation.test.js` validating all 29 markup, styling, and controller assertions
-- [x] Verified zero console/build errors with `npm run build` (206ms production bundle) and `npm test`
+- [x] Implemented application shell, header, branding, theme toggle (system/dark/light), and CSS design system in Phase 1
+- [x] Implemented `FileManager` in `src/core/file-manager.js`:
+  - Multi-file ingestion via file input picker and drag & drop
+  - Duplicate detection by comparing filename, file size, and lastModified timestamp
+  - Empty file validation (0-byte rejection)
+  - Unsupported format validation against supported dictionary
+  - Queue item standard structure: `id`, `file`, `name`, `filename`, `size`, `formattedSize`, `type`, `mimeType`, `extension`, `inputFormat`, `category`, `status`, `progress`, `outputFormat`, `availableOutputs`, `outputBlob`, `error`, `lastModified`
+  - Removal of individual items (`removeFile(id)`)
+  - Clearing entire queue (`clearQueue()`)
+  - Target format selection (`setOutputFormat(id, format)`)
+- [x] Implemented Queue Item UI in `src/core/app.js`:
+  - Custom category SVG icons for images, documents, audio, and video
+  - Truncated filename with tooltip and formatted file size
+  - Input format tag and MIME type indicator
+  - Target output format dropdown with viable conversion targets
+  - Status pill (`Queued`)
+  - Accessible remove item button with hover highlight
+  - Notification banner area for warnings and duplicate alerts with dismiss action
+  - Queue count badge reactivity and dynamic empty state toggling
+  - Clear queue button enabling/disabling
+- [x] Enhanced formatting and format dictionaries in `src/utils/formatters.js`
+- [x] Created `tests/phase2-filesystem.test.js` validating all 48 Phase 2 assertions
+- [x] Verified zero errors with `npm test` (77 assertions passed across Phase 1 & Phase 2) and `npm run build`
 
 ## In Progress
-None (Phase 1 tasks completed and verified; awaiting instruction for Phase 2)
+None (Phase 2 completed and verified; awaiting instruction for Phase 3)
 
 ## Files Created
 - `package.json`
@@ -47,16 +63,18 @@ None (Phase 1 tasks completed and verified; awaiting instruction for Phase 2)
 - `libs/local/.gitkeep`
 - `tests/.gitkeep`
 - `tests/phase1-foundation.test.js`
+- `tests/phase2-filesystem.test.js`
 - `PROJECT_STATE.md`
 - `CHANGELOG.md`
 - `TODO.md`
 - `README.md`
 
 ## Files Modified
-- `index.html`
-- `src/styles/main.css`
-- `src/core/state-manager.js`
+- `src/core/file-manager.js`
+- `src/utils/formatters.js`
 - `src/core/app.js`
+- `src/styles/main.css`
+- `index.html`
 - `package.json`
 - `PROJECT_STATE.md`
 - `CHANGELOG.md`
@@ -70,20 +88,20 @@ None (converters deferred to Phase 4: Image, Phase 6: Document, Phase 7: Audio/V
 
 ## Tests Passed
 - `tests/phase1-foundation.test.js`: All 29 assertions passed (HTML elements, accessibility landmarks, CSS design tokens, StateManager theme cycling, App lifecycle)
-- Production build test (`npm run build`): Successfully built in 206ms with 0 errors
+- `tests/phase2-filesystem.test.js`: All 48 assertions passed (format utilities, multi-file ingestion, queue item attributes, empty file rejection, duplicate rejection, unsupported format rejection, format switching, item removal, queue clearing)
+- Production build test (`npm run build`): Successfully built 8 modules in 208ms with 0 errors
 - Dev server HTTP check: `http://localhost:3000` responds HTTP 200 OK
 
 ## Tests Failed
-- Browser subagent automation: Playwright driver binary download 404 from upstream provider (out-of-band environment limitation; unit and build checks executed directly via Node.js toolchain)
+None
 
 ## Known Issues
-- Playwright browser driver download 404 prevented automated browser subagent screenshots; headless Node unit tests and dev server HTTP verification passed cleanly.
+None
 
 ## Pending Tasks
-- Phase 2: File System (File picker, drag & drop ingestion, file validation, queue item data structures, metadata parsing)
-- Phase 3: Converter Engine (Converter registry, lifecycle management, format discovery)
+- Phase 3: Converter Engine (Converter registry, lifecycle management, converter interface, format resolution)
 - Phase 4: Image Conversion (Native Canvas/Blob/createImageBitmap conversions: PNG, JPG, WebP)
-- Phase 5: Conversion Queue (Batch processing, progress tracking, cancellation)
+- Phase 5: Conversion Queue (Batch conversion execution, progress bars, cancellation, individual & batch zip downloads)
 - Phase 6: PDF / Document (Local browser-compatible document conversions)
 - Phase 7: Audio / Video (Local WASM engine integration)
 - Phase 8: Web Workers (Background thread offloading)
@@ -93,18 +111,19 @@ None (converters deferred to Phase 4: Image, Phase 6: Document, Phase 7: Audio/V
 - Phase 12: Finalization (Production build, documentation, final validation)
 
 ## Next Recommended Task
-Phase 2 — File System: Implement `FileManager` in `src/core/file-manager.js` with MIME-type detection, size validation, duplicate handling, and queue item models.
+Phase 3 — Converter Engine: Implement `ConverterManager` in `src/core/converter-manager.js` establishing the standard converter contract (`id`, `name`, `inputTypes`, `outputTypes`, `canConvert`, `convert`, `estimate`, `cancel`) and lifecycle orchestration.
 
 ## Important Decisions
 - Strictly offline: No CDN dependencies, no external APIs, zero server communication.
-- Theme architecture: 3-state cycle (System -> Dark -> Light -> System) with reactive OS listener and local storage persistence.
+- File integrity & safety: Duplicate files are rejected with clear UI feedback to prevent redundant processing.
+- Non-destructive queue management: Individual item removal and clear queue options with immediate memory cleanup.
 - Ephemeral memory for files: Never persist user files or metadata in `localStorage`.
-- Accessibility-first: Semantic headings, ARIA live announcer (`#a11y-announcer`), keyboard shortcuts for dropzone.
+- Accessibility-first: Notification alerts announced via `#a11y-announcer` and focusable interactive elements with descriptive labels.
 
 ## Do Not Repeat
 - Do not add remote CDN links or remote font/script tags.
 - Do not mock or fake conversion outputs; unsupported formats must fail transparently.
-- Do not start Phase 2 automatically until instructed.
+- Do not start Phase 3 automatically until instructed.
 
 ## Last Updated
 2026-09-28

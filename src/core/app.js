@@ -1,12 +1,15 @@
 /**
  * Core Application Controller
- * Handles application lifecycle, theme system, dropzone event wiring, and empty queue state.
+ * Handles application lifecycle, theme system, dropzone event wiring,
+ * multi-file ingestion, validation, duplicate notifications, and queue item management.
  */
 import { StateManager } from './state-manager.js';
+import { FileManager } from './file-manager.js';
 
 export class App {
   constructor() {
     this.stateManager = new StateManager();
+    this.fileManager = new FileManager();
 
     // DOM references
     this.themeToggleBtn = null;
@@ -14,9 +17,14 @@ export class App {
     this.dropZone = null;
     this.fileInput = null;
     this.browseBtn = null;
+    this.queueSection = null;
     this.queueEmptyState = null;
     this.fileQueueList = null;
     this.queueCountBadge = null;
+    this.clearAllBtn = null;
+    this.convertAllBtn = null;
+    this.downloadAllBtn = null;
+    this.notificationArea = null;
     this.a11yAnnouncer = null;
 
     // Drag counter for nested drag events
@@ -24,14 +32,14 @@ export class App {
   }
 
   /**
-   * Initialize Application Foundation
+   * Initialize Application
    */
   init() {
     this.cacheDOMElements();
     this.initThemeSystem();
     this.bindDropZoneEvents();
     this.bindQueueEvents();
-    console.info('Offline File Converter — Phase 1 Application Foundation ready.');
+    console.info('Offline File Converter — Phase 2 File System & Queue ready.');
   }
 
   /**
@@ -43,9 +51,14 @@ export class App {
     this.dropZone = document.getElementById('drop-zone');
     this.fileInput = document.getElementById('file-input');
     this.browseBtn = document.getElementById('browse-btn');
+    this.queueSection = document.getElementById('queue-section');
     this.queueEmptyState = document.getElementById('queue-empty-state');
     this.fileQueueList = document.getElementById('file-queue-list');
     this.queueCountBadge = document.getElementById('queue-count-badge');
+    this.clearAllBtn = document.getElementById('clear-all-btn');
+    this.convertAllBtn = document.getElementById('convert-all-btn');
+    this.downloadAllBtn = document.getElementById('download-all-btn');
+    this.notificationArea = document.getElementById('notification-area');
     this.a11yAnnouncer = document.getElementById('a11y-announcer');
   }
 
@@ -128,7 +141,7 @@ export class App {
   }
 
   /* ==========================================================================
-     Drop Zone & File Selection
+     Drop Zone & Multi-File Selection
      ========================================================================== */
 
   bindDropZoneEvents() {
@@ -155,12 +168,14 @@ export class App {
       }
     });
 
-    // File input change
+    // File input change event
     this.fileInput.addEventListener('change', (e) => {
       const files = Array.from(e.target.files || []);
       if (files.length > 0) {
         this.handleFilesSelected(files);
       }
+      // Reset input value so identical filename re-additions can fire change
+      this.fileInput.value = '';
     });
 
     // Prevent default window drag and drop navigation
@@ -206,31 +221,262 @@ export class App {
   }
 
   /**
-   * Stub file selection handler for Phase 1
-   * Full validation and queue management will be wired in Phase 2
+   * Process multiple files selected via file input or drop zone
    * @param {File[]} files
    */
   handleFilesSelected(files) {
-    const fileCount = files.length;
-    const msg = `Selected ${fileCount} file${fileCount > 1 ? 's' : ''}. Queue management will be connected in Phase 2.`;
-    console.info(msg, files.map(f => f.name));
-    this.announce(msg);
+    const { added, rejected } = this.fileManager.addFiles(files);
+
+    // Show warnings/errors for rejected files (duplicates, empty, unsupported)
+    if (rejected.length > 0) {
+      this.showRejectionsFeedback(rejected);
+    } else {
+      this.clearNotifications();
+    }
+
+    // Render added files
+    if (added.length > 0) {
+      for (const item of added) {
+        const element = this.createQueueItemElement(item);
+        this.fileQueueList.appendChild(element);
+      }
+
+      this.updateQueueView();
+      const message = `Added ${added.length} file${added.length > 1 ? 's' : ''} to queue. Total: ${this.fileManager.count}.`;
+      this.announce(message);
+    }
+  }
+
+  /**
+   * Display notification banner for rejected files
+   * @param {{ file: File, reason: string }[]} rejected
+   */
+  showRejectionsFeedback(rejected) {
+    if (!this.notificationArea) return;
+
+    this.clearNotifications();
+
+    const banner = document.createElement('div');
+    banner.className = 'notification-banner warning';
+    banner.setAttribute('role', 'alert');
+
+    const reasons = rejected.map(r => r.reason).join(' | ');
+    banner.innerHTML = `
+      <span>${reasons}</span>
+      <button type="button" class="notification-close" aria-label="Dismiss message">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    `;
+
+    banner.querySelector('.notification-close').addEventListener('click', () => {
+      banner.remove();
+    });
+
+    this.notificationArea.appendChild(banner);
+    this.announce(`Notice: ${reasons}`);
+  }
+
+  /**
+   * Clear notifications
+   */
+  clearNotifications() {
+    if (this.notificationArea) {
+      this.notificationArea.innerHTML = '';
+    }
   }
 
   /* ==========================================================================
-     Queue Section & Actions
+     Queue Item UI Rendering & Management
+     ========================================================================== */
+
+  /**
+   * Generate category SVG icon
+   * @param {'image' | 'document' | 'audio' | 'video' | 'generic'} category
+   * @returns {string} SVG markup
+   */
+  getCategoryIconMarkup(category) {
+    switch (category) {
+      case 'image':
+        return `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+            <circle cx="9" cy="9" r="2"/>
+            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+          </svg>`;
+      case 'document':
+        return `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" x2="8" y1="13" y2="13"/>
+            <line x1="16" x2="8" y1="17" y2="17"/>
+            <line x1="10" x2="8" y1="9" y2="9"/>
+          </svg>`;
+      case 'audio':
+        return `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18V5l12-2v13"/>
+            <circle cx="6" cy="18" r="3"/>
+            <circle cx="18" cy="16" r="3"/>
+          </svg>`;
+      case 'video':
+        return `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="23 7 16 12 23 17 23 7"/>
+            <rect width="14" height="14" x="1" y="5" rx="2" ry="2"/>
+          </svg>`;
+      default:
+        return `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+            <polyline points="13 2 13 9 20 9"/>
+          </svg>`;
+    }
+  }
+
+  /**
+   * Create DOM element for a queue item card
+   * @param {Object} item
+   * @returns {HTMLLIElement}
+   */
+  createQueueItemElement(item) {
+    const li = document.createElement('li');
+    li.className = 'queue-item';
+    li.id = `queue-item-${item.id}`;
+    li.setAttribute('data-id', item.id);
+
+    // Build format options
+    const optionsHtml = item.availableOutputs.map(out => {
+      const selected = out === item.outputFormat ? 'selected' : '';
+      return `<option value="${out}" ${selected}>${out.toUpperCase()}</option>`;
+    }).join('');
+
+    li.innerHTML = `
+      <div class="item-category-icon category-${item.category}" aria-hidden="true">
+        ${this.getCategoryIconMarkup(item.category)}
+      </div>
+
+      <div class="item-info">
+        <div class="item-filename" title="${item.filename}">
+          ${item.filename}
+        </div>
+        <div class="item-meta">
+          <span class="item-size">${item.formattedSize}</span>
+          <span class="item-format-tag" title="MIME: ${item.mimeType}">${item.extension.toUpperCase()}</span>
+        </div>
+      </div>
+
+      <div class="item-converter-control">
+        <span class="target-arrow" aria-hidden="true">&rarr;</span>
+        <label class="sr-only" for="format-select-${item.id}">Target format for ${item.filename}</label>
+        <select id="format-select-${item.id}" class="format-select" aria-label="Convert ${item.filename} to">
+          ${optionsHtml}
+        </select>
+      </div>
+
+      <div class="item-status">
+        <span id="status-${item.id}" class="status-badge status-${item.status}">${item.status}</span>
+      </div>
+
+      <button type="button" class="btn-remove-item" aria-label="Remove ${item.filename} from queue" title="Remove file">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    `;
+
+    // Bind format selection change
+    const select = li.querySelector('.format-select');
+    if (select) {
+      select.addEventListener('change', (e) => {
+        this.fileManager.setOutputFormat(item.id, e.target.value);
+        this.announce(`Target format for ${item.filename} set to ${e.target.value.toUpperCase()}`);
+      });
+    }
+
+    // Bind remove button
+    const removeBtn = li.querySelector('.btn-remove-item');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', () => {
+        this.removeQueueItem(item.id, item.filename);
+      });
+    }
+
+    return li;
+  }
+
+  /**
+   * Remove an item from the queue and DOM
+   * @param {string} id
+   * @param {string} filename
+   */
+  removeQueueItem(id, filename) {
+    this.fileManager.removeFile(id);
+    const element = document.getElementById(`queue-item-${id}`);
+    if (element) {
+      element.remove();
+    }
+
+    this.updateQueueView();
+    this.announce(`Removed ${filename} from queue.`);
+  }
+
+  /**
+   * Update queue header counters, empty state visibility, and action button states
+   */
+  updateQueueView() {
+    const count = this.fileManager.count;
+
+    if (this.queueCountBadge) {
+      this.queueCountBadge.textContent = count.toString();
+      this.queueCountBadge.setAttribute('aria-label', `${count} item${count === 1 ? '' : 's'} in queue`);
+    }
+
+    if (count === 0) {
+      if (this.queueEmptyState) this.queueEmptyState.classList.remove('hidden');
+      if (this.fileQueueList) this.fileQueueList.classList.add('hidden');
+      if (this.clearAllBtn) {
+        this.clearAllBtn.disabled = true;
+        this.clearAllBtn.setAttribute('aria-disabled', 'true');
+      }
+    } else {
+      if (this.queueEmptyState) this.queueEmptyState.classList.add('hidden');
+      if (this.fileQueueList) this.fileQueueList.classList.remove('hidden');
+      if (this.clearAllBtn) {
+        this.clearAllBtn.disabled = false;
+        this.clearAllBtn.removeAttribute('aria-disabled');
+      }
+    }
+  }
+
+  /* ==========================================================================
+     Queue Action Handlers
      ========================================================================== */
 
   bindQueueEvents() {
-    // Phase 1: Ensure queue starts in clean empty state
-    if (this.queueEmptyState) {
-      this.queueEmptyState.classList.remove('hidden');
+    this.updateQueueView();
+
+    if (this.clearAllBtn) {
+      this.clearAllBtn.addEventListener('click', () => {
+        this.clearAllQueue();
+      });
     }
+  }
+
+  /**
+   * Clear all items from queue
+   */
+  clearAllQueue() {
+    const count = this.fileManager.clearQueue();
     if (this.fileQueueList) {
-      this.fileQueueList.classList.add('hidden');
+      this.fileQueueList.innerHTML = '';
     }
-    if (this.queueCountBadge) {
-      this.queueCountBadge.textContent = '0';
-    }
+    this.clearNotifications();
+    this.updateQueueView();
+    this.announce(`Cleared all ${count} files from queue.`);
   }
 }

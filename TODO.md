@@ -22,25 +22,29 @@
   * [x] Create empty queue state with feature highlights
   * [x] Create test suite [tests/phase1-foundation.test.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/tests/phase1-foundation.test.js) and configure `npm test`
   * [x] Verify production build and local server functionality
+* [x] **Phase 2 — File System**
+  * [x] Implement file picker and drag & drop multi-file ingestion in [src/core/file-manager.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/file-manager.js)
+  * [x] Implement file validation (reject 0-byte empty files, reject unsupported formats)
+  * [x] Implement duplicate detection (compare filename, size, and lastModified)
+  * [x] Standardize queue item model containing `id`, `file`, `name`, `filename`, `size`, `type`, `extension`, `status`, `progress`, `outputFormat`, and metadata
+  * [x] Build dynamic queue item UI cards with category SVGs, formatted sizes, format dropdowns, status pills, and remove buttons
+  * [x] Implement single file removal and full queue clearing
+  * [x] Add notification alert banner for rejected/duplicate files with dismiss action
+  * [x] Create unit test suite [tests/phase2-filesystem.test.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/tests/phase2-filesystem.test.js) (48 assertions passed)
 
 ---
 
 ## Current Tasks
 
-* [ ] Ready to start **Phase 2 — File System**
-  * [ ] Implement file picker ingestion and drag & drop ingestion in [src/core/file-manager.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/file-manager.js)
-  * [ ] Implement file validation (MIME types, size limits, duplicate detection)
-  * [ ] Build queue item data structures and render queue item list in UI
-  * [ ] Implement file item removal and clear queue actions
+* [ ] Ready to start **Phase 3 — Converter Engine**
+  * [ ] Build converter registry and lifecycle manager in [src/core/converter-manager.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/converter-manager.js)
+  * [ ] Define standard converter interface (`id`, `name`, `inputTypes`, `outputTypes`, `canConvert`, `convert`, `estimate`, `cancel`)
+  * [ ] Connect format resolution between `FileManager` and registered converters
+  * [ ] Prepare output blob and download management in [src/core/download-manager.js](file:///d:/Frontend/All_Projects/Apps/File-Converter/src/core/download-manager.js)
 
 ---
 
 ## Pending Tasks
-
-### Phase 3 — Converter Engine
-* [ ] Build converter registry and lifecycle manager (`src/core/converter-manager.js`)
-* [ ] Define standard converter interface (`id`, `name`, `inputTypes`, `outputTypes`, `canConvert`, `convert`, `estimate`, `cancel`)
-* [ ] Implement output blob and download management (`src/core/download-manager.js`)
 
 ### Phase 4 — Image Conversion
 * [ ] Implement native Canvas/OffscreenCanvas image conversions (`src/converters/image/`)
