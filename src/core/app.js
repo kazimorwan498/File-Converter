@@ -248,15 +248,11 @@ export class App {
       });
     }
 
-    this.dropZone.addEventListener('click', () => {
-      this.fileInput.click();
-    });
-
-    this.dropZone.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        this.fileInput.click();
+    this.dropZone.addEventListener('click', (e) => {
+      if (e.target === this.fileInput || (this.browseBtn && this.browseBtn.contains(e.target))) {
+        return;
       }
+      this.fileInput.click();
     });
 
     this.fileInput.addEventListener('change', (e) => {
@@ -265,6 +261,15 @@ export class App {
         this.handleFilesSelected(files);
       }
       this.fileInput.value = '';
+      if (this.browseBtn) {
+        this.browseBtn.focus();
+      }
+    });
+
+    this.fileInput.addEventListener('cancel', () => {
+      if (this.browseBtn) {
+        this.browseBtn.focus();
+      }
     });
 
     window.addEventListener('dragover', (e) => e.preventDefault(), false);
@@ -639,7 +644,7 @@ export class App {
     const convertBtn = li.querySelector(`#btn-convert-${item.id}`);
     if (convertBtn) {
       convertBtn.addEventListener('click', () => {
-        this.convertSingleItem(item);
+        this.convertSingleItem(item).catch(() => {});
       });
     }
 
@@ -655,7 +660,7 @@ export class App {
     const retryBtn = li.querySelector(`#btn-retry-${item.id}`);
     if (retryBtn) {
       retryBtn.addEventListener('click', () => {
-        this.convertSingleItem(item);
+        this.convertSingleItem(item).catch(() => {});
       });
     }
 
@@ -769,6 +774,12 @@ export class App {
         if (statusBadge) {
           statusBadge.className = 'status-badge status-failed';
           statusBadge.textContent = 'Failed';
+        }
+        const limBox = document.getElementById(`limitation-box-${item.id}`);
+        const limText = document.getElementById(`limitation-text-${item.id}`);
+        if (limBox && limText) {
+          limText.textContent = err.message || 'Conversion failed.';
+          limBox.classList.remove('hidden');
         }
         this.announce(`Error converting ${item.filename}: ${err.message}`);
       }

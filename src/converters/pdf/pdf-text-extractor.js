@@ -5,7 +5,7 @@
  */
 import { ConversionError } from '../../core/conversion-error.js';
 
-export class PdfExtractor {
+export class PdfTextExtractor {
   /**
    * Decode PDF string escape sequences (e.g. \(, \), \\, \ddd octal)
    * @param {string} str
@@ -15,9 +15,7 @@ export class PdfExtractor {
     if (!str) return '';
 
     return str
-      // Octal character escapes: \123
       .replace(/\\([0-7]{1,3})/g, (_, oct) => String.fromCharCode(parseInt(oct, 8)))
-      // Common character escapes
       .replace(/\\n/g, '\n')
       .replace(/\\r/g, '\r')
       .replace(/\\t/g, '\t')
@@ -34,7 +32,6 @@ export class PdfExtractor {
    * @returns {Promise<Uint8Array>}
    */
   static async decompressFlate(compressedBytes) {
-    // 1. Try native Web Streams DecompressionStream (Standard in modern browsers and Node 17+)
     if (typeof DecompressionStream !== 'undefined') {
       try {
         const ds = new DecompressionStream('deflate');
@@ -59,11 +56,9 @@ export class PdfExtractor {
         }
         return result;
       } catch {
-        // If zlib header variant fails, try deflate-raw
         try {
           const dsRaw = new DecompressionStream('deflate-raw');
           const writer = dsRaw.writable.getWriter();
-          // Skip 2 bytes zlib header if present
           const rawBytes = compressedBytes.length > 2 ? compressedBytes.slice(2) : compressedBytes;
           writer.write(rawBytes);
           writer.close();
@@ -90,7 +85,6 @@ export class PdfExtractor {
       }
     }
 
-    // 2. Try Node.js zlib if available in test environment
     if (typeof process !== 'undefined' && process.versions && process.versions.node) {
       try {
         const zlibModule = 'node:zlib';
@@ -116,7 +110,6 @@ export class PdfExtractor {
     const lines = [];
     let currentLineTokens = [];
 
-    // Match text blocks between BT and ET
     const btRegex = /BT([\s\S]*?)ET/g;
     let btMatch;
 
@@ -132,47 +125,34 @@ export class PdfExtractor {
 
     while ((btMatch = btRegex.exec(content)) !== null) {
       const block = btMatch[1];
-
-      // Scan commands within block
-      // 1. Tj operator: (string) Tj
-      // 2. TJ operator: [(string) -10 (string)] TJ
-      // 3. ' operator: (string) '
-      // 4. " operator: w c (string) "
-      // 5. Line move operators: T*, Td, TD, Tm
       const tokenRegex = /(\((?:\\.|[^()])*\))\s*Tj|\[((?:[^[\]]|\((?:\\.|[^()])*\))*)\]\s*TJ|(\((?:\\.|[^()])*\))\s*'|(?:\S+\s+\S+\s+)?(\((?:\\.|[^()])*\))\s*"|(T\*|Td|TD|Tm)/g;
       let tokenMatch;
 
       while ((tokenMatch = tokenRegex.exec(block)) !== null) {
-        // Line break operators
         if (tokenMatch[5]) {
           flushLine();
           continue;
         }
 
-        // Tj or ' or "
         const singleStrMatch = tokenMatch[1] || tokenMatch[3] || tokenMatch[4];
         if (singleStrMatch) {
-          // Strip enclosing parentheses
           const raw = singleStrMatch.slice(1, -1);
-          currentLineTokens.push(PdfExtractor.decodePdfString(raw));
+          currentLineTokens.push(PdfTextExtractor.decodePdfString(raw));
           if (tokenMatch[3] || tokenMatch[4]) {
-            // ' and " also move to next line
             flushLine();
           }
           continue;
         }
 
-        // TJ array
         const arrayContent = tokenMatch[2];
         if (arrayContent) {
           const itemRegex = /\((.*?)\)|(-?\d+(?:\.\d+)?)/g;
           let itemMatch;
           while ((itemMatch = itemRegex.exec(arrayContent)) !== null) {
             if (itemMatch[1] !== undefined) {
-              currentLineTokens.push(PdfExtractor.decodePdfString(itemMatch[1]));
+              currentLineTokens.push(PdfTextExtractor.decodePdfString(itemMatch[1]));
             } else if (itemMatch[2] !== undefined) {
               const spacing = parseFloat(itemMatch[2]);
-              // Negative spacing in TJ often indicates space between words (typically < -100)
               if (spacing < -120) {
                 currentLineTokens.push(' ');
               }
@@ -214,13 +194,10 @@ export class PdfExtractor {
     const latin1Decoder = new TextDecoder('latin1');
     const pdfText = latin1Decoder.decode(buffer);
 
-    // Validate PDF header
     if (!pdfText.startsWith('%PDF-')) {
       throw new ConversionError('File is not a valid PDF document (missing %PDF- header).', 'INVALID_PDF');
     }
 
-    // Find all stream objects: e.g. << /Filter /FlateDecode ... >> stream ... endstream
-    // Regex finds object headers and streams
     const streamRegex = /<<([^>]*)>>\s*stream\r?\n/g;
     let match;
     const extractedBlocks = [];
@@ -238,9 +215,7 @@ export class PdfExtractor {
         continue;
       }
 
-      // Slice out stream bytes
       const rawStreamBytes = new Uint8Array(buffer.slice(streamStart, endStreamIndex));
-      // Handle trailing newline before endstream if present
       let streamBytes = rawStreamBytes;
       if (streamBytes.length > 0 && streamBytes[streamBytes.length - 1] === 10) {
         streamBytes = streamBytes.slice(0, streamBytes.length - 1);
@@ -254,22 +229,21 @@ export class PdfExtractor {
       try {
         let streamString = '';
         if (isFlate) {
-          const decompressed = await PdfExtractor.decompressFlate(streamBytes);
+          const decompressed = await PdfTextExtractor.decompressFlate(streamBytes);
           streamString = latin1Decoder.decode(decompressed);
         } else {
           streamString = latin1Decoder.decode(streamBytes);
         }
 
-        const lines = PdfExtractor.parseTextFromStream(streamString);
+        const lines = PdfTextExtractor.parseTextFromStream(streamString);
         if (lines.length > 0) {
           extractedBlocks.push(...lines);
         }
       } catch {
-        // Skip un-decompressible streams (e.g. image streams, JPXDecode, CCITTFaxDecode)
+        // Skip un-decompressible streams
       }
     }
 
-    // Filter out page numbers and header repetitions if appropriate
     const cleanedLines = extractedBlocks
       .map(line => line.trim())
       .filter(line => line.length > 0);
@@ -284,3 +258,6 @@ export class PdfExtractor {
     return cleanedLines.join('\n');
   }
 }
+
+// For compatibility
+export const PdfExtractor = PdfTextExtractor;

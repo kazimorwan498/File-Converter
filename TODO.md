@@ -138,12 +138,25 @@
   * [x] Transparent documentation of known limitations in README.md
   * [x] Finalize project tracking documentation (PROJECT_STATE.md, CHANGELOG.md, TODO.md, README.md)
 
+* [x] **Phase 13 — Scanned PDF Offline OCR & Accessibility Hardening**
+  * [x] Fix deprecated PWA meta warning by replacing `apple-mobile-web-app-capable` with `mobile-web-app-capable`
+  * [x] Verify `beforeinstallprompt` interception, deferral, and userChoice resolution
+  * [x] Fix file input accessibility: remove `aria-hidden="true"` and `tabindex="-1"`, add accessible label, apply visually-hidden CSS
+  * [x] Restore sensible focus behavior to Browse button upon file selection and dialog cancellation
+  * [x] Implement `ScannedPdfDetector` in `src/converters/pdf/scanned-pdf-detector.js`
+  * [x] Implement `PdfPageRenderer` in `src/converters/pdf/pdf-page-renderer.js` using local PDF.js worker
+  * [x] Implement `OcrManager` in `src/ocr/ocr-manager.js` and `OcrWorker` in `src/ocr/ocr-worker.js`
+  * [x] Locally bundle Tesseract WebAssembly engine and English traineddata (`eng.traineddata.gz`, 10.92 MB)
+  * [x] Implement granular progress reporting ("Preparing scanned PDF", "Rendering page X of N", "OCR page X of N", "Finalizing")
+  * [x] Implement clear error handling for OCR failures and eliminate unhandled promise rejections
+  * [x] Create comprehensive test suite in `tests/phase13-scanned-pdf-ocr.test.js` (21 assertions passed, 611 total)
+
 ---
 
 ## Current Tasks
 
-* [x] **All Phases Complete & Verified (Phases 0 through 12)**
-  * [x] Project is ready for production deployment and offline standalone PWA use
+* [x] **All Phases Complete & Verified (Phases 0 through 13)**
+  * [x] Project is ready for production deployment, offline OCR, and standalone PWA use
 
 ---
 
@@ -156,4 +169,5 @@
 ## Blocked Tasks
 
 * None
+
 

@@ -10,6 +10,9 @@ import { generateOutputFilename } from '../../utils/formatters.js';
 import { PdfDocument } from './pdf-generator.js';
 import { MarkdownParser } from './markdown-parser.js';
 import { PdfExtractor } from './pdf-extractor.js';
+import { ScannedPdfDetector } from './scanned-pdf-detector.js';
+import { PdfPageRenderer } from './pdf-page-renderer.js';
+import { ocrManager } from '../../ocr/ocr-manager.js';
 
 export const DOCUMENT_CONVERSION_LIMITATIONS = {
   'pdf->png': {
@@ -358,11 +361,47 @@ ${paragraphs}
 
     // 8. PDF -> TXT
     else if (inExt === 'pdf' && outExt === 'txt') {
-      onProgress(30, 'Extracting text streams from PDF');
-      const text = await PdfExtractor.extractText(file, { signal });
-      onProgress(80, 'Assembling extracted text');
+      onProgress(10, 'Detecting text layer');
+      const detection = await ScannedPdfDetector.detect(file, { signal });
 
-      outputBlob = new Blob([text], { type: 'text/plain' });
+      let text;
+      if (!detection.isScanned && detection.text) {
+        onProgress(85, 'Assembling extracted text');
+        text = detection.text;
+      } else {
+        // Scanned / Image-only PDF pipeline
+        onProgress(15, 'Preparing scanned PDF');
+
+        // Render PDF pages to images offline
+        const pageImages = await PdfPageRenderer.renderPages(file, {
+          scale: 2.0,
+          signal,
+          onProgress: (page, total, msg) => {
+            const pct = 15 + Math.round((page / total) * 35);
+            onProgress(pct, `Rendering page ${page} of ${total}`);
+          }
+        });
+
+        if (!pageImages || pageImages.length === 0) {
+          throw new ConversionError('Unable to extract text from this scanned PDF offline: No pages rendered.', 'OCR_FAILED');
+        }
+
+        // Run offline OCR Web Worker on rendered page images
+        const ocrResult = await ocrManager.recognizePages(pageImages, {
+          signal,
+          onProgress: (pct, msg) => {
+            onProgress(pct, msg);
+          }
+        });
+
+        text = ocrResult.text;
+      }
+
+      if (!text || !text.trim()) {
+        throw new ConversionError('Unable to extract text from this scanned PDF offline.', 'OCR_FAILED');
+      }
+
+      outputBlob = new Blob([text.trim()], { type: 'text/plain' });
       mimeType = 'text/plain';
     }
 

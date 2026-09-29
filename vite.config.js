@@ -15,6 +15,12 @@ export default defineConfig({
           if (id.includes('@ffmpeg')) {
             return 'vendor-ffmpeg';
           }
+          if (id.includes('tesseract.js')) {
+            return 'vendor-ocr';
+          }
+          if (id.includes('pdfjs-dist')) {
+            return 'vendor-pdfjs';
+          }
         }
       }
     }

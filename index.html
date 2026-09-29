@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z'/%3E%3Cpolyline points='14 2 14 8 20 8'/%3E%3Cpath d='M12 18v-6'/%3E%3Cpath d='m9 15 3 3 3-3'/%3E%3C/svg%3E" />
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#4f46e5" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="FileConverter" />
   <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
@@ -102,8 +102,8 @@
       <section class="dropzone-section" aria-labelledby="dropzone-heading">
         <h2 id="dropzone-heading" class="sr-only">Add Files For Conversion</h2>
 
-        <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-describedby="dropzone-hint dropzone-formats">
-          <input type="file" id="file-input" class="file-input" multiple aria-hidden="true" tabindex="-1" />
+        <div id="drop-zone" class="drop-zone" role="region" aria-label="File upload drop zone" aria-describedby="dropzone-hint dropzone-formats">
+          <input type="file" id="file-input" class="file-input" multiple aria-label="Upload files for conversion" />
           
           <div class="drop-zone-content">
             <div class="drop-zone-icon-wrapper" aria-hidden="true">

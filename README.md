@@ -16,7 +16,7 @@ A 100% offline, privacy-first file conversion web application built with vanilla
 - **Core Engine**: Converter Registry pattern with standard lifecycle interface (`canConvert`, `convert`, `cancel`, `getConversionLimitation`).
 - **Conversion Pipelines**:
   - **Image Conversion**: Background Web Worker execution (`image.worker.js`) using `OffscreenCanvas` and `createImageBitmap` (PNG, JPG, JPEG, WebP) with zero-copy buffer transfer and transparent main-thread fallback.
-  - **Document Conversion**: Pure JavaScript offline PDF 1.4 multi-page document generator (`PdfDocument`), Markdown compiler (`MarkdownParser`), and PDF text extractor (`PdfExtractor`).
+  - **Document Conversion & Offline OCR**: Pure JavaScript offline PDF 1.4 multi-page document generator (`PdfDocument`), Markdown compiler (`MarkdownParser`), digital text extractor (`PdfTextExtractor`), and 100% offline scanned PDF OCR pipeline (`ScannedPdfDetector`, `PdfPageRenderer`, `OcrManager`) powered by locally bundled Tesseract.js WebAssembly and local English language data (`eng.traineddata.gz`).
   - **Audio & Video Conversion**: Locally bundled FFmpeg 0.12 WebAssembly engine (`ffmpeg-core.js` and `ffmpeg-core.wasm` in `public/ffmpeg/` and `libs/local/ffmpeg/`) running in a dedicated WASM worker.
 - **Memory Hygiene**: Ephemeral memory management, zero-copy transferable `ArrayBuffer` pipelines, automatic unlinking of virtual filesystem files (`deleteFile`), idle worker termination, and explicit `URL.revokeObjectURL()` cleanup.
 - **Progressive Web App (PWA) & Offline**:
@@ -30,7 +30,7 @@ A 100% offline, privacy-first file conversion web application built with vanilla
 | Category | Input Formats | Output Formats | Processing Engine |
 | :--- | :--- | :--- | :--- |
 | **Image** | PNG, JPG, JPEG, WebP | PNG, JPG, JPEG, WebP | Background Web Worker (`OffscreenCanvas`) / Canvas |
-| **Document** | TXT, MD, Markdown, HTML, JSON, PDF | PDF, TXT, HTML | Native JS Generator / Parser / Extractor |
+| **Document** | TXT, MD, Markdown, HTML, JSON, PDF | PDF, TXT, HTML | Native JS Generator / Parser / Extractor / Offline OCR |
 | **Audio** | MP3, WAV, OGG, AAC, M4A, FLAC | MP3, WAV, OGG, AAC, FLAC | Bundled FFmpeg WebAssembly |
 | **Video** | MP4, WebM, MOV, MKV, AVI | MP4, WebM, MP3, WAV | Bundled FFmpeg WebAssembly |
 
@@ -38,13 +38,13 @@ A 100% offline, privacy-first file conversion web application built with vanilla
 
 ## Browser Compatibility
 
-| Browser | Minimum Version | Offline / PWA | Web Workers & OffscreenCanvas | FFmpeg WebAssembly |
-| :--- | :--- | :--- | :--- | :--- |
-| **Google Chrome / Chromium** | 92+ | Full Support | Full Support | Full Support (`SharedArrayBuffer` via COOP/COEP) |
-| **Microsoft Edge** | 92+ | Full Support | Full Support | Full Support (`SharedArrayBuffer` via COOP/COEP) |
-| **Mozilla Firefox** | 90+ | Full Support | Full Support | Full Support (`SharedArrayBuffer` via COOP/COEP) |
-| **Apple Safari (macOS)** | 16.4+ | Full Support | Full Support | Supported (Safari 16.4+ with COOP/COEP) |
-| **Mobile Browsers (Android/iOS)** | Android Chrome 92+ / iOS Safari 16.4+ | Full Support (Add to Home Screen) | Full Support | Supported on modern hardware |
+| Browser | Minimum Version | Offline / PWA | Web Workers & OffscreenCanvas | FFmpeg WebAssembly | Offline OCR (Tesseract / PDF.js) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Google Chrome / Chromium** | 92+ | Full Support | Full Support | Full Support (`SharedArrayBuffer` via COOP/COEP) | Full Support |
+| **Microsoft Edge** | 92+ | Full Support | Full Support | Full Support (`SharedArrayBuffer` via COOP/COEP) | Full Support |
+| **Mozilla Firefox** | 90+ | Full Support | Full Support | Full Support (`SharedArrayBuffer` via COOP/COEP) | Full Support |
+| **Apple Safari (macOS)** | 16.4+ | Full Support | Full Support | Supported (Safari 16.4+ with COOP/COEP) | Full Support |
+| **Mobile Browsers (Android/iOS)** | Android Chrome 92+ / iOS Safari 16.4+ | Full Support (Add to Home Screen) | Full Support | Supported on modern hardware | Supported on modern hardware |
 
 ## Known Limitations
 
@@ -53,9 +53,9 @@ In strict adherence to the **No Fake Conversions** core principle, unsupported c
 1. **Complex Document Layouts (`DOCX -> PDF`, `PDF -> DOCX`)**:
    - Compiling Microsoft Word XML or reflowing complex PDF multi-column geometries requires heavy desktop office suites (e.g. MS Office, LibreOffice). These are rejected with `UNSUPPORTED_FORMAT` to protect document fidelity.
 2. **Arbitrary PDF Rasterization (`PDF -> PNG/JPG`)**:
-   - Rasterizing multi-page vector PDFs to bitmap images offline requires desktop Cairo or Poppler rendering runtimes.
-3. **Scanned PDF OCR**:
-   - The offline PDF extractor parses embedded text layers and FlateDecode streams. Image-only scanned PDFs without embedded text layers require OCR engines and will report that no text layer is present.
+   - Rasterizing multi-page vector PDFs to standalone bitmap image files offline requires desktop Cairo or Poppler rendering runtimes.
+3. **Scanned PDF Multi-Language OCR**:
+   - Client-side OCR is bundled offline with the English language traineddata (`eng.traineddata.gz`). Other languages would require bundling additional language models.
 4. **Proprietary & DRM-Encumbered Media Codecs (`WMA`, `WMV`, `RMVB`, `M4P`)**:
    - Legacy RealMedia and proprietary Windows Media codecs are unsupported by browser-compatible WebAssembly builds and are rejected transparently.
 5. **Memory Limits for Giant Video Files**:

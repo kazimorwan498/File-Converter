@@ -106,9 +106,12 @@ export class PwaManager {
    * @param {Event} e
    */
   handleBeforeInstallPrompt(e) {
-    if (e && typeof e.preventDefault === 'function') {
-      e.preventDefault();
-    }
+    // Store event for later use — prompt() will be called when user clicks install button.
+    // Note: We intentionally do NOT call e.preventDefault() here.
+    // Calling preventDefault() causes Chrome to log a warning:
+    // "Banner not shown: beforeinstallpromptevent.preventDefault() called."
+    // By not preventing default, the browser may show its own mini-infobar,
+    // and our custom install button also becomes available.
     this.deferredPrompt = e;
     this.isInstallable = true;
     this.onInstallableChange(true);
@@ -130,20 +133,25 @@ export class PwaManager {
    * @returns {Promise<{ outcome: 'accepted' | 'dismissed' | 'unavailable' }>}
    */
   async promptInstall() {
-    if (!this.deferredPrompt) {
+    const promptEvent = this.deferredPrompt;
+    if (!promptEvent || typeof promptEvent.prompt !== 'function') {
+      this.deferredPrompt = null;
+      this.isInstallable = false;
+      this.onInstallableChange(false);
       return { outcome: 'unavailable' };
     }
 
     try {
-      this.deferredPrompt.prompt();
-      const choiceResult = await this.deferredPrompt.userChoice;
-      this.deferredPrompt = null;
-      this.isInstallable = false;
-      this.onInstallableChange(false);
-      return { outcome: choiceResult.outcome };
+      await promptEvent.prompt();
+      const choiceResult = await promptEvent.userChoice;
+      return { outcome: choiceResult ? choiceResult.outcome : 'dismissed' };
     } catch (err) {
       console.warn('PWA: Prompt error:', err.message);
       return { outcome: 'dismissed' };
+    } finally {
+      this.deferredPrompt = null;
+      this.isInstallable = false;
+      this.onInstallableChange(false);
     }
   }
 

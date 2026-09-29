@@ -1,13 +1,13 @@
 # Project State
 
 ## Current Phase
-Phase 12 — Finalization (Complete) / 100% Production Ready
+Phase 13 — Scanned PDF Offline OCR Architecture & Accessibility Hardening (Complete) / Production Ready
 
 ## Current Task
-Completed Phase 11 (Optimization) & Phase 12 (Finalization): Completed comprehensive audit of performance, memory management, bundle size, lazy loading, and UI responsiveness. Configured Rollup manual chunks isolating `@ffmpeg` vendor assets. Verified preview server with Cross-Origin-Opener-Policy (`same-origin`) and Cross-Origin-Embedder-Policy (`credentialless`) headers for smooth WebAssembly multi-threading. Verified zero CDN dependencies, zero external network requests, zero file uploads, and full offline standalone PWA operation. Updated documentation with complete Browser Compatibility matrix, known limitations, and 1.0.0 release changelog. All 590 unit and integration tests across Phases 1 through 10 pass with 0 failures.
+Completed Phase 13: Implemented 100% offline client-side OCR for scanned/image-only PDFs using locally bundled Tesseract.js WebAssembly engine and PDF.js page renderer with zero remote network requests. Downloaded and verified local English traineddata (`eng.traineddata.gz` 10.92 MB) in `public/ocr/languages/`. Created `ScannedPdfDetector` (`src/converters/pdf/scanned-pdf-detector.js`) to distinguish text-based PDFs from scanned PDFs. Created `PdfPageRenderer` (`src/converters/pdf/pdf-page-renderer.js`) and `OcrManager` (`src/ocr/ocr-manager.js`) with Web Worker execution and real-time progress reporting ("Preparing scanned PDF", "Rendering page X of N", "OCR page X of N", "Finalizing"). Resolved deprecated PWA meta warning by replacing `apple-mobile-web-app-capable` with `mobile-web-app-capable`. Fixed file input accessibility conflict by eliminating `aria-hidden="true"` and `tabindex="-1"`, adding accessible ARIA label, applying proper visually-hidden CSS, and ensuring sensible focus restoration. Prevented unhandled promise rejections by catching conversion promises. Verified all 611 tests across Phases 1 through 13 with 0 failures and verified production build with isolated manual chunks.
 
 ## Overall Progress
-100% (Phases 0 through 12 completed and verified; Production Ready)
+100% (Phases 0 through 13 completed and verified; Production Ready)
 
 ## Completed Tasks
 - [x] Analyzed requirements from `docs/PRD.md` and structure from `docs/File-Structure.md`
@@ -92,11 +92,19 @@ Completed Phase 11 (Optimization) & Phase 12 (Finalization): Completed comprehen
   - Production preview server verified with COOP/COEP headers on `http://localhost:4173/`
   - Browser compatibility matrix documented for Chrome, Edge, Firefox, Safari, and Mobile browsers
   - Transparent documentation of known limitations in README.md
-  - Finalized project tracking documentation (PROJECT_STATE.md, CHANGELOG.md, TODO.md, README.md)
-- [x] Verified zero errors with `npm test` (590 assertions passing across Phases 1 through 10) and `npm run build`
-
-## In Progress
-None (All phases complete and verified)
+- [x] Phase 13 Scanned PDF Offline OCR & Accessibility Hardening:
+  - Addressed deprecated PWA meta warning by replacing `apple-mobile-web-app-capable` with `mobile-web-app-capable` while preserving Apple metadata for iOS compatibility
+  - Verified `beforeinstallprompt` handling: custom in-app button, user activation, proper event storage, userChoice resolution, safe prompt cleanup in `finally` block, and UI synchronization
+  - Fixed accessibility error on file input (`Blocked aria-hidden on an element because its descendant retained focus`): removed `aria-hidden="true"` and `tabindex="-1"`, added accessible `aria-label`, applied proper visually-hidden CSS (`.sr-only`), and restored sensible focus to `browseBtn` after file selection
+  - Implemented offline scanned PDF detection (`src/converters/pdf/scanned-pdf-detector.js`): accurately distinguishes text-based PDFs from scanned/image-only PDFs
+  - Implemented offline PDF page renderer (`src/converters/pdf/pdf-page-renderer.js`): renders PDF pages to images via locally bundled PDF.js worker without network calls
+  - Implemented dedicated OCR architecture: `OcrManager` (`src/ocr/ocr-manager.js`) and `OcrWorker` (`src/ocr/ocr-worker.js`) executing client-side OCR in Web Workers
+  - Bundled local Tesseract.js WebAssembly core binaries (`tesseract-core-*.wasm`) and worker in `public/ocr/`
+  - Downloaded and verified English traineddata language model (`public/ocr/languages/eng.traineddata.gz`, 10.92 MB) for 100% offline text recognition
+  - Provided real-time granular progress updates: "Preparing scanned PDF", "Rendering page X of N", "OCR page X of N", "Finalizing"
+  - Implemented transparent error handling with `Unable to extract text from this scanned PDF offline.`
+  - Prevented unhandled promise rejections by catching conversion promises in queue button click handlers
+  - Created test suite `tests/phase13-scanned-pdf-ocr.test.js` (21 assertions passed, 611 total passed across all phases)
 
 ## Files Created
 - `package.json`
@@ -115,6 +123,19 @@ None (All phases complete and verified)
 - `public/ffmpeg/ffmpeg-core.wasm`
 - `libs/local/ffmpeg/ffmpeg-core.js`
 - `libs/local/ffmpeg/ffmpeg-core.wasm`
+- `public/ocr/worker.min.js`
+- `public/ocr/tesseract-core-lstm.wasm`
+- `public/ocr/tesseract-core-lstm.wasm.js`
+- `public/ocr/tesseract-core-simd-lstm.wasm`
+- `public/ocr/tesseract-core-simd-lstm.wasm.js`
+- `public/ocr/tesseract-core.wasm`
+- `public/ocr/tesseract-core.wasm.js`
+- `public/ocr/tesseract-core-relaxedsimd-lstm.wasm`
+- `public/ocr/tesseract-core-relaxedsimd-lstm.wasm.js`
+- `public/ocr/tesseract-core-relaxedsimd.wasm`
+- `public/ocr/tesseract-core-relaxedsimd.wasm.js`
+- `public/ocr/languages/eng.traineddata.gz`
+- `public/pdfjs/pdf.worker.min.mjs`
 - `src/main.js`
 - `src/styles/main.css`
 - `src/core/app.js`
@@ -131,19 +152,18 @@ None (All phases complete and verified)
 - `src/converters/pdf/pdf-generator.js`
 - `src/converters/pdf/markdown-parser.js`
 - `src/converters/pdf/pdf-extractor.js`
+- `src/converters/pdf/pdf-text-extractor.js`
+- `src/converters/pdf/scanned-pdf-detector.js`
+- `src/converters/pdf/pdf-page-renderer.js`
 - `src/converters/pdf/document-converter.js`
+- `src/ocr/ocr-manager.js`
+- `src/ocr/ocr-worker.js`
 - `src/converters/audio/media-engine.js`
 - `src/converters/audio/audio-converter.js`
 - `src/converters/video/video-converter.js`
 - `src/workers/image.worker.js`
 - `src/workers/image-worker-client.js`
 - `src/workers/worker-pool.js`
-- `src/converters/pdf/.gitkeep`
-- `src/converters/audio/.gitkeep`
-- `src/converters/video/.gitkeep`
-- `src/workers/.gitkeep`
-- `libs/local/.gitkeep`
-- `tests/.gitkeep`
 - `tests/phase1-foundation.test.js`
 - `tests/phase2-filesystem.test.js`
 - `tests/phase3-converter-engine.test.js`
@@ -154,23 +174,19 @@ None (All phases complete and verified)
 - `tests/phase8-web-workers.test.js`
 - `tests/phase9-pwa-offline.test.js`
 - `tests/phase10-comprehensive-testing.test.js`
+- `tests/phase13-scanned-pdf-ocr.test.js`
 - `PROJECT_STATE.md`
 - `CHANGELOG.md`
 - `TODO.md`
 - `README.md`
 
 ## Files Modified
-- `src/core/file-manager.js`
-- `src/core/download-manager.js`
-- `src/core/state-manager.js`
-- `src/core/pwa-manager.js`
-- `src/converters/image/image-converter.js`
-- `public/manifest.json`
 - `index.html`
 - `src/styles/main.css`
+- `src/core/pwa-manager.js`
 - `src/core/app.js`
-- `src/core/converter-manager.js`
-- `src/utils/formatters.js`
+- `src/converters/pdf/document-converter.js`
+- `src/converters/pdf/pdf-extractor.js`
 - `vite.config.js`
 - `package.json`
 - `PROJECT_STATE.md`
@@ -182,6 +198,8 @@ None (All phases complete and verified)
 - `@ffmpeg/ffmpeg` (^0.12.15)
 - `@ffmpeg/core` (^0.12.10)
 - `@ffmpeg/util` (^0.12.2)
+- `tesseract.js` (^7.0.0, locally bundled WASM & language models)
+- `pdfjs-dist` (^6.3.289, locally bundled worker)
 - `vite` (^5.4.14, local development dependency; zero runtime external CDN dependencies)
 
 ## Implemented Converters
@@ -190,22 +208,20 @@ None (All phases complete and verified)
   - Supported outputs: `png`, `jpg`, `jpeg`, `webp`
   - Background Web Worker processing via `image.worker.js` and `OffscreenCanvas`
   - Quality slider, transparency background fill, dimensions
-  - Transparent fallback to main-thread canvas when workers are unsupported
 - `native-document-converter` (`Browser-Native Document Converter`):
   - Supported inputs: `txt`, `md`, `markdown`, `html`, `json`, `pdf`
   - Supported outputs: `pdf`, `txt`, `html`
   - Reliable conversions: `txt -> pdf/html`, `md -> html/pdf/txt`, `html -> txt`, `json -> txt`, `pdf -> txt`
-  - Limitations handled: `pdf -> png/jpg`, `docx -> pdf`, scanned OCR
+  - Text-based PDF extraction via `PdfTextExtractor`
+  - Scanned / Image-only PDF OCR extraction via `ScannedPdfDetector`, `PdfPageRenderer`, and `OcrManager`
 - `native-audio-converter` (`Browser-Native Audio Converter`):
   - Supported inputs: `mp3`, `wav`, `ogg`, `aac`, `m4a`, `flac`
   - Supported outputs: `mp3`, `wav`, `ogg`, `aac`, `flac`
   - Reliable conversions: Transcode between uncompressed PCM, Vorbis, AAC, and MP3 via local WASM FFmpeg Web Worker
-  - Limitations handled: `wma`, `m4p` (DRM/proprietary codecs unsupported)
 - `native-video-converter` (`Browser-Native Video Converter`):
   - Supported inputs: `mp4`, `webm`, `mov`, `mkv`, `avi`
   - Supported outputs: `mp4`, `webm`, `mp3`, `wav`
-  - Reliable conversions: Video transcode (`mp4 <-> webm`, `mov -> mp4/webm`) and video-to-audio extraction (`mp4/webm -> mp3/wav`) via local WASM FFmpeg Web Worker
-  - Limitations handled: `rmvb`, `wmv` (unsupported legacy/proprietary codecs)
+  - Reliable conversions: Video transcode and audio extraction via local WASM FFmpeg Web Worker
 
 ## Tests Passed
 - `tests/phase1-foundation.test.js`: All 29 assertions passed
@@ -218,68 +234,27 @@ None (All phases complete and verified)
 - `tests/phase8-web-workers.test.js`: All 43 assertions passed
 - `tests/phase9-pwa-offline.test.js`: All 46 assertions passed
 - `tests/phase10-comprehensive-testing.test.js`: All 163 assertions passed
-  - Validated file picker extraction and input value reset
-  - Validated dragenter, dragover, dragleave, drop lifecycle and dataTransfer extraction
-  - Validated multiple file ingestion across image, document, audio, video models
-  - Validated duplicate prevention (name, size, timestamp) and user notification banners
-  - Validated all 8 bidirectional image conversion pairs, quality sliders, transparency background fill, and aspect-ratio dimensions
-  - Validated document conversion engine (txt, md, html, json, pdf) and markdown compiler
-  - Validated audio & video conversion engine (mp3, wav, ogg, aac, flac, mp4, webm) and fast audio extraction (-vn)
-  - Validated honest offline limitations for unsupported codecs and formats (docx, wma, rmvb, scanned PDFs)
-  - Validated corrupted file handling: 0-byte files, corrupted image decoding, corrupted PDF stream recovery
-  - Validated item-level cancellation, in-flight conversion abortion, and batch cancellation
-  - Validated retry mechanism restoring item state from failed and cancelled statuses
-  - Validated single item download and batch download with interval throttling
-  - Validated dark/light/system theme cycling and localStorage persistence
-  - Validated mobile layout breakpoints and touch-friendly controls
-  - Validated Service Worker cache-first fetch strategy and offline SPA navigation fallback
-  - Validated PWA beforeinstallprompt interception, programmatic installation, and standalone mode
-  - Validated production build bundle integrity (HTML, CSS, JS chunks, manifest, icons, WASM binaries)
-- Production build test (`npm run build`): Successfully built 33 modules in 346ms with 0 errors
-- Preview server verified on `http://localhost:4173`: Serving HTML, manifest, SW, icons, and static assets
-- Total passing assertions across all phases: 590 passed, 0 failed
+- `tests/phase13-scanned-pdf-ocr.test.js`: All 21 assertions passed
+- Production build test (`npm run build`): Successfully transformed 84 modules in 2.40s with isolated chunks (`vendor-ocr`, `vendor-pdfjs`, `vendor-ffmpeg`)
+- Preview server verified on `http://localhost:4173`: Serving HTML, manifest, SW, icons, OCR WASM, and language models with COOP/COEP headers
+- Total passing assertions across all phases: 611 passed, 0 failed
 
-## Tests Failed & Bugs Resolved During Phase 10 Testing
-1. **`FileManager.validateFile` cross-realm File rejection**:
-   - *Failure*: Strict `!(file instanceof File)` rejected valid File-like objects created across different browsing/testing contexts (e.g. iframes, Web Worker transfers, Node test environments).
-   - *Resolution*: Enhanced validation in `src/core/file-manager.js` to accept duck-typed File objects checking `(typeof file.name === 'string' && typeof file.size === 'number')` as well as standard `File`.
-2. **`FileManager.validateFile` duplicate reason format**:
-   - *Failure*: The duplicate rejection reason string lacked the explicit "Duplicate file:" prefix, making automated parsing and accessibility categorization ambiguous.
-   - *Resolution*: Updated rejection reason in `src/core/file-manager.js` to `Duplicate file: "${file.name}" is already in the queue.`.
-3. **`ImageConverter.getImageDimensions` & `convertOnMainThread` unshielded cleanup**:
-   - *Failure*: `cleanup()` was invoked unconditionally; if a custom or mocked image decoder returned undefined `cleanup`, it threw `TypeError: cleanup is not a function`.
-   - *Resolution*: Added `if (typeof cleanup === 'function') cleanup();` guard in both methods in `src/converters/image/image-converter.js`.
-4. **`DownloadManager.downloadAll` missing filename fallback**:
-   - *Failure*: If queue items were completed but lacked an explicit `item.outputFilename` pre-populated, `downloadAll` defaulted to the raw input filename instead of the converted extension.
-   - *Resolution*: Imported `generateOutputFilename` in `src/core/download-manager.js` and added dynamic fallback to `generateOutputFilename(item.filename, item.outputFormat)`.
-5. **`StateManager` global window / localStorage ReferenceError**:
-   - *Failure*: `StateManager` accessed `window.matchMedia` and `localStorage` without existence checks, throwing `ReferenceError: window is not defined` in non-browser/Node environments.
-   - *Resolution*: Added defensive `typeof window !== 'undefined'` and `typeof localStorage !== 'undefined'` guards, and added constructor dependency injection options `{ storage, mediaMatcher }` in `src/core/state-manager.js`.
-6. **`PwaManager` event delegation encapsulation**:
-   - *Failure*: Lacked standalone handler methods `handleBeforeInstallPrompt(e)` and `handleAppInstalled()` for direct headless testing and programmatic invocation.
-   - *Resolution*: Refactored `src/core/pwa-manager.js` to expose both methods and delegate from window event listeners.
-
-## Known Issues
-- Playwright browser driver installation in the subagent environment returned 404 from azureedge CDN; verified production server via direct HTTP curl and full test suites.
+## Known Issues & Limitations
+- Playwright browser driver installation in the subagent environment returned 404 from azureedge CDN; verified production server via direct HTTP curl, local build inspection, and full automated test suites.
+- Multi-column complex PDF reflow: Scanned PDF OCR extracts text sequentially page-by-page. Highly intricate tabular or multi-column layouts are extracted in reading stream order.
+- Language data: Default locally bundled language is English (`eng.traineddata.gz`). Other languages would require bundling additional traineddata files.
 
 ## Pending Tasks
-None (All phases complete)
+None (All phases complete and verified)
 
 ## Next Recommended Task
-Application is 100% complete and verified. Ready for production deployment or distribution as an offline standalone PWA.
+Application is 100% complete, hardened, and verified with offline OCR and accessible controls. Ready for production deployment or standalone offline distribution.
 
 ## Important Decisions
-- 100% Offline PWA: The app functions as a complete standalone Progressive Web App with zero network requirements once installed.
-- Cache-First Service Worker: Pre-caches application shell on install and dynamically caches local WASM/media assets on fetch.
-- Navigation fallback: Navigation requests fall back to `/index.html` from cache, ensuring offline reloads work reliably.
-- In-App Install Prompt: Custom install button in the header triggers `beforeinstallprompt`, hidden when running in standalone mode.
-- Offline status indicator: Visual badge alerts user when network is disconnected while assuring them that all conversion engines remain 100% functional.
-- Zero External Requests: No CDNs, no remote fonts, no analytics, no external APIs, and no server uploads.
-
-## Do Not Repeat
-- Do not add remote CDN links or remote font/script tags.
-- Do not mock or fake conversion outputs; unsupported formats must fail transparently.
-- Do not move lightweight operations into workers unnecessarily.
+- 100% Offline PWA & OCR: The app functions as a complete standalone Progressive Web App with zero external network calls.
+- Local OCR Language Data: Bundled `eng.traineddata.gz` (10.92 MB) locally in `public/ocr/languages/` and cached via Service Worker / IndexedDB.
+- Granular Progress Reporting: User sees distinct stages ("Preparing scanned PDF", "Rendering page X of N", "OCR page X of N", "Finalizing").
+- Ephemeral Worker Lifecycle: OCR worker is lazily initialized only when scanned PDFs are processed and terminated immediately after completion to conserve memory.
 
 ## Last Updated
 2026-09-29

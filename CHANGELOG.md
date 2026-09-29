@@ -6,6 +6,31 @@ All notable changes to the Offline File Converter project will be documented in 
 
 ### Added
 
+* Completed Phase 13 — Scanned PDF Offline OCR & Accessibility Hardening:
+  * Implemented 100% offline client-side OCR for scanned and image-only PDFs with zero remote network requests or API dependencies.
+  * Locally bundled Tesseract.js WebAssembly engine core (`tesseract-core-*.wasm`) and worker in `public/ocr/`.
+  * Downloaded and bundled English language model (`public/ocr/languages/eng.traineddata.gz`, 10.92 MB).
+  * Built `ScannedPdfDetector` (`src/converters/pdf/scanned-pdf-detector.js`) to accurately distinguish text-based PDFs from scanned/image-only PDFs.
+  * Built `PdfPageRenderer` (`src/converters/pdf/pdf-page-renderer.js`) to render PDF pages to crisp 2x resolution images using locally bundled PDF.js worker (`public/pdfjs/pdf.worker.min.mjs`).
+  * Built `OcrManager` (`src/ocr/ocr-manager.js`) and `OcrWorker` (`src/ocr/ocr-worker.js`) executing OCR in Web Workers with cancellation support via `AbortSignal`.
+  * Implemented real-time granular progress reporting: "Preparing scanned PDF", "Rendering page X of N", "OCR page X of N", "Finalizing".
+  * Integrated offline OCR into `DocumentConverter` (`src/converters/pdf/document-converter.js`) for `PDF -> TXT` conversion.
+  * Implemented test suite `tests/phase13-scanned-pdf-ocr.test.js` validating all 21 assertions.
+
+### Fixed
+
+* Replaced deprecated `<meta name="apple-mobile-web-app-capable" content="yes">` with modern `<meta name="mobile-web-app-capable" content="yes">`, eliminating Chromium PWA deprecation warnings while retaining Apple metadata for iOS compatibility.
+* Fixed accessibility focus conflict on file input: removed `aria-hidden="true"` and `tabindex="-1"`, added accessible `aria-label="Upload files for conversion"`, and styled using proper visually-hidden CSS (`.sr-only`).
+* Restored sensible focus behavior: returning keyboard focus to the Browse Files button after file selection or dialog cancellation.
+* Eliminated unhandled promise rejections by catching conversion promises in queue Convert and Retry button handlers and reflecting error details in the queue card UI.
+* Hardened `PwaManager.promptInstall()` to always clear `deferredPrompt` in a `finally` block, preventing dangling or repeated prompts.
+
+### Changed
+
+* Updated `vite.config.js`: Added manual chunks for `vendor-ocr` and `vendor-pdfjs` to keep initial load lean (~82 kB index bundle).
+* Updated `package.json`: Added `tesseract.js` (^7.0.0) and `pdfjs-dist` (^6.3.289) and updated `npm test` script.
+* Updated `PROJECT_STATE.md`, `TODO.md`, and `README.md`.
+
 * Completed Phase 12 — Finalization:
   * Verified 100% offline, zero-network architecture: Zero external CDN dependencies, zero external runtime APIs, zero server file uploads.
   * Verified production build: Built in 353ms with optimized chunks.
