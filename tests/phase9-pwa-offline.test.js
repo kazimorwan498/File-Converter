@@ -5,6 +5,12 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, '..');
+
 import { PwaManager } from '../src/core/pwa-manager.js';
 import { ConverterManager } from '../src/core/converter-manager.js';
 import { ImageConverter } from '../src/converters/image/image-converter.js';
@@ -24,7 +30,6 @@ function assert(condition, message) {
 console.log('--- Testing Phase 9: PWA & Offline Engine ---');
 
 async function runTests() {
-  const rootDir = process.cwd();
 
   // =========================================================================
   // 1. Validate manifest.json Structure & Assets

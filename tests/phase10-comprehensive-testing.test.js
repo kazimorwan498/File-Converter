@@ -25,8 +25,11 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-// Core imports
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, '..');
 import { StateManager } from '../src/core/state-manager.js';
 import { FileManager } from '../src/core/file-manager.js';
 import { ConverterManager } from '../src/core/converter-manager.js';
@@ -117,8 +120,6 @@ console.log('--- Phase 10: Comprehensive End-to-End Testing & Edge Cases ---');
 console.log('================================================================');
 
 async function runComprehensiveTests() {
-  const rootDir = process.cwd();
-
   // =========================================================================
   // 1. File Picker & Input Reset
   // =========================================================================
@@ -446,10 +447,10 @@ async function runComprehensiveTests() {
     const audioConverter = new AudioConverter();
     const videoConverter = new VideoConverter();
 
-    // Document limitations
-    assert(!docConverter.canConvert('pdf', 'png'), 'PDF -> PNG is not supported');
+    // Document limitations (PDF -> PNG/JPG is supported offline via PDF.js; DOCX -> PDF remains an honest desktop limitation)
+    assert(docConverter.canConvert('pdf', 'png'), 'PDF -> PNG is supported offline');
     const pdfPngLim = docConverter.getConversionLimitation('pdf', 'png');
-    assert(!pdfPngLim.isSupported && pdfPngLim.reason.toLowerCase().includes('rasteriz'), 'PDF -> PNG explains rasterization limitation');
+    assert(pdfPngLim.isSupported, 'PDF -> PNG limitation flags supported');
 
     assert(!docConverter.canConvert('docx', 'pdf'), 'DOCX -> PDF is not supported');
     const docxLim = docConverter.getConversionLimitation('docx', 'pdf');
@@ -467,7 +468,7 @@ async function runComprehensiveTests() {
     // Verify rejection with ConversionError
     let threw = false;
     try {
-      await docConverter.convert(new MockFile('test.pdf', 100), { outputFormat: 'png' });
+      await docConverter.convert(new MockFile('test.docx', 100, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'), { outputFormat: 'pdf' });
     } catch (err) {
       threw = true;
       assert(err instanceof ConversionError, 'Rejected error is instance of ConversionError');

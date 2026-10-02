@@ -23,10 +23,31 @@ async function getPdfJsLib() {
 
 export class PdfPageRenderer {
   /**
+   * Map output format extension to MIME type
+   * @param {string} [format='png']
+   * @returns {{ mimeType: string, quality: number | undefined }}
+   */
+  static getImageConfig(format = 'png', quality) {
+    const fmt = (format || 'png').toLowerCase();
+    switch (fmt) {
+      case 'jpg':
+      case 'jpeg':
+        return { mimeType: 'image/jpeg', quality: quality !== undefined ? quality : 0.92 };
+      case 'webp':
+        return { mimeType: 'image/webp', quality: quality !== undefined ? quality : 0.92 };
+      case 'png':
+      default:
+        return { mimeType: 'image/png', quality: undefined };
+    }
+  }
+
+  /**
    * Render all pages of a PDF to image Blobs
    * @param {File|Blob|ArrayBuffer|Uint8Array} fileOrBuffer
    * @param {Object} [options]
    * @param {number} [options.scale=2.0] - Render scale factor (2.0 = 144 DPI for clean OCR)
+   * @param {string} [options.outputFormat='png'] - Output image format (png, jpg, webp)
+   * @param {number} [options.quality] - Image quality for lossy formats (0-1)
    * @param {function(number, number, string): void} [options.onProgress] - (page, total, message)
    * @param {AbortSignal} [options.signal]
    * @returns {Promise<Array<{ pageNum: number, blob: Blob }>>}
@@ -50,6 +71,7 @@ export class PdfPageRenderer {
 
     const onProgress = typeof options.onProgress === 'function' ? options.onProgress : () => {};
     const scale = options.scale || 2.0;
+    const imgConfig = PdfPageRenderer.getImageConfig(options.outputFormat, options.quality);
 
     const pdfjs = await getPdfJsLib();
 
@@ -128,13 +150,18 @@ export class PdfPageRenderer {
 
       let blob;
       if (canvas.convertToBlob) {
-        blob = await canvas.convertToBlob({ type: 'image/png' });
+        blob = await canvas.convertToBlob({
+          type: imgConfig.mimeType,
+          quality: imgConfig.quality
+        });
       } else if (canvas.toBlob) {
-        blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+        blob = await new Promise((resolve) =>
+          canvas.toBlob(resolve, imgConfig.mimeType, imgConfig.quality)
+        );
       }
 
       if (!blob) {
-        throw new ConversionError(`Failed to encode rendered PDF page ${pageNum} to image.`, 'OCR_FAILED');
+        throw new ConversionError(`Failed to encode rendered PDF page ${pageNum} to image.`, 'CONVERSION_FAILED');
       }
 
       renderedPages.push({

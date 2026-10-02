@@ -15,22 +15,6 @@ import { PdfPageRenderer } from './pdf-page-renderer.js';
 import { ocrManager } from '../../ocr/ocr-manager.js';
 
 export const DOCUMENT_CONVERSION_LIMITATIONS = {
-  'pdf->png': {
-    supported: false,
-    reason: 'Rasterizing arbitrary complex vector PDFs to images requires desktop rendering engines or cloud conversion. 100% offline client-side rasterization is unsupported to protect document fidelity.'
-  },
-  'pdf->jpg': {
-    supported: false,
-    reason: 'Rasterizing arbitrary complex vector PDFs to images requires desktop rendering engines or cloud conversion. 100% offline client-side rasterization is unsupported to protect document fidelity.'
-  },
-  'pdf->jpeg': {
-    supported: false,
-    reason: 'Rasterizing arbitrary complex vector PDFs to images requires desktop rendering engines or cloud conversion. 100% offline client-side rasterization is unsupported to protect document fidelity.'
-  },
-  'pdf->webp': {
-    supported: false,
-    reason: 'Rasterizing arbitrary complex vector PDFs to images requires desktop rendering engines or cloud conversion. 100% offline client-side rasterization is unsupported.'
-  },
   'docx->pdf': {
     supported: false,
     reason: 'DOCX conversion requires desktop office engines (MS Word / LibreOffice). 100% offline client-side conversion is unsupported.'
@@ -48,7 +32,7 @@ export class DocumentConverter extends BaseConverter {
       name: 'Browser-Native Document Converter',
       description: 'Converts Text, Markdown, HTML, JSON, and extracts PDF text layers completely offline.',
       inputFormats: ['txt', 'md', 'markdown', 'html', 'json', 'pdf'],
-      outputFormats: ['pdf', 'txt', 'html'],
+      outputFormats: ['pdf', 'txt', 'html', 'png', 'jpg', 'jpeg', 'webp'],
       inputMimeTypes: [
         'text/plain',
         'text/markdown',
@@ -117,7 +101,7 @@ export class DocumentConverter extends BaseConverter {
       case 'json':
         return outExt === 'txt';
       case 'pdf':
-        return outExt === 'txt';
+        return ['txt', 'png', 'jpg', 'jpeg', 'webp'].includes(outExt);
       default:
         return false;
     }
@@ -141,7 +125,7 @@ export class DocumentConverter extends BaseConverter {
       case 'json':
         return ['txt'];
       case 'pdf':
-        return ['txt'];
+        return ['txt', 'png', 'jpg', 'webp'];
       default:
         return [];
     }
@@ -403,6 +387,35 @@ ${paragraphs}
 
       outputBlob = new Blob([text.trim()], { type: 'text/plain' });
       mimeType = 'text/plain';
+    }
+
+    // 9. PDF -> Image (PNG, JPG, WebP) — rasterize first page via pdfjs-dist
+    else if (inExt === 'pdf' && ['png', 'jpg', 'jpeg', 'webp'].includes(outExt)) {
+      onProgress(10, 'Loading PDF document');
+
+      if (signal && signal.aborted) throw new ConversionError('Conversion cancelled', 'CANCELLED');
+
+      const quality = options.quality !== undefined ? options.quality : 0.92;
+
+      const renderedPages = await PdfPageRenderer.renderPages(file, {
+        scale: 2.0,
+        outputFormat: outExt,
+        quality,
+        signal,
+        onProgress: (page, total, msg) => {
+          const pct = 10 + Math.round((page / total) * 80);
+          onProgress(pct, msg);
+        }
+      });
+
+      if (!renderedPages || renderedPages.length === 0) {
+        throw new ConversionError('Failed to render PDF pages to image.', 'CONVERSION_FAILED');
+      }
+
+      // For single-image output, use the first page
+      outputBlob = renderedPages[0].blob;
+      const imgConfig = PdfPageRenderer.getImageConfig(outExt);
+      mimeType = imgConfig.mimeType;
     }
 
     else {

@@ -198,15 +198,15 @@ const answer = 42;
   assert(docConverter.canConvert('pdf', 'txt') === true, 'canConvert supports pdf -> txt');
 
   // Unsupported formats (Never faked, clearly rejected)
-  assert(docConverter.canConvert('pdf', 'png') === false, 'canConvert rejects pdf -> png');
-  assert(docConverter.canConvert('pdf', 'jpg') === false, 'canConvert rejects pdf -> jpg');
+  assert(docConverter.canConvert('pdf', 'png') === true, 'canConvert supports pdf -> png');
+  assert(docConverter.canConvert('pdf', 'jpg') === true, 'canConvert supports pdf -> jpg');
+  assert(docConverter.canConvert('pdf', 'webp') === true, 'canConvert supports pdf -> webp');
   assert(docConverter.canConvert('docx', 'pdf') === false, 'canConvert rejects docx -> pdf');
   assert(docConverter.canConvert('txt', 'mp3') === false, 'canConvert rejects txt -> mp3');
 
   // Limitation reporting
   const limPdfPng = docConverter.getConversionLimitation('pdf', 'png');
-  assert(limPdfPng.isSupported === false, 'getConversionLimitation marks pdf -> png unsupported');
-  assert(limPdfPng.reason.includes('Rasterizing') || limPdfPng.reason.includes('desktop rendering'), 'Limitation reason explains desktop rendering requirement');
+  assert(limPdfPng.isSupported === true, 'getConversionLimitation marks pdf -> png supported');
 
   const limDocx = docConverter.getConversionLimitation('docx', 'pdf');
   assert(limDocx.isSupported === false, 'getConversionLimitation marks docx -> pdf unsupported');
@@ -222,6 +222,9 @@ const answer = 42;
   assert(docConverter.getAvailableOutputs('md').includes('html'), 'md outputs include html');
   assert(docConverter.getAvailableOutputs('md').includes('txt'), 'md outputs include txt');
   assert(docConverter.getAvailableOutputs('pdf').includes('txt'), 'pdf outputs include txt');
+  assert(docConverter.getAvailableOutputs('pdf').includes('png'), 'pdf outputs include png');
+  assert(docConverter.getAvailableOutputs('pdf').includes('jpg'), 'pdf outputs include jpg');
+  assert(docConverter.getAvailableOutputs('pdf').includes('webp'), 'pdf outputs include webp');
 
   // =========================================================================
   // 5. Document Conversions Execution
@@ -294,11 +297,12 @@ const answer = 42;
   // Test Attempting Unsupported Conversion: Must fail honestly
   let unsupportedCaught = false;
   try {
-    await docConverter.convert(validPdfFile, { outputFormat: 'png' });
+    const docxFile = new File(['fake docx'], 'report.docx', { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    await docConverter.convert(docxFile, { outputFormat: 'pdf' });
   } catch (err) {
     unsupportedCaught = true;
     assert(err.code === 'UNSUPPORTED_FORMAT', 'Unsupported conversion throws UNSUPPORTED_FORMAT');
-    assert(err.message.includes('Rasterizing') || err.message.includes('unsupported offline'), 'Error message explains why conversion is unsupported');
+    assert(err.message.includes('office') || err.message.includes('unsupported offline') || err.message.includes('No converter registered'), 'Error message explains why conversion is unsupported');
   }
   assert(unsupportedCaught, 'Unsupported conversion was not faked and threw transparent error');
 
@@ -335,7 +339,7 @@ const answer = 42;
   assert(manager.canConvert('txt', 'pdf') === true, 'Manager canConvert txt -> pdf');
   assert(manager.canConvert('md', 'html') === true, 'Manager canConvert md -> html');
   assert(manager.canConvert('pdf', 'txt') === true, 'Manager canConvert pdf -> txt');
-  assert(manager.canConvert('pdf', 'png') === false, 'Manager rejects pdf -> png');
+  assert(manager.canConvert('pdf', 'png') === true, 'Manager canConvert pdf -> png');
 
   const managedItem = {
     id: 'test_doc_1',
